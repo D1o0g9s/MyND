@@ -39,18 +39,17 @@ introductionText = "NeuroFocus"
 instructionsText = "Memorize the initial list of words and click when the word had just appeared on the screen. \n\nYou have 10 minutes to get through the entire article. \n\nThere are XXX words to find."
 
 notif_box_pos = (0.5, -0.4)
-height_inc = 0.3
+height_inc = 0.16
 notif_box_pos_large = (notif_box_pos[0], notif_box_pos[1] + height_inc)
 notif_cicle_pos = (notif_box_pos[0] - 0.2, notif_box_pos[1])
 notif_text_pos = (notif_box_pos[0] - 0.1, notif_box_pos[1])
 notif_num_pos = (notif_text_pos[0] + 0.1, notif_box_pos[1])
 notif_box_size_small = (1, 0.1)
-notif_box_size_large = (notif_box_size_small[0], notif_box_size_small[1] + height_inc * 2)
+notif_box_size_large = (notif_box_size_small[0], notif_box_size_small[1] + height_inc * 4)
 
 memes_path = "./pics/memes"
 all_memes = listdir(memes_path)
 meme_filenames = [join(memes_path, all_memes[i]) for i in range(len(all_memes))]
-
 
 class FocusDistractionExperiement: 
     
@@ -118,7 +117,7 @@ class FocusDistractionExperiement:
             return visual.ImageStim(
                 win=self.__win, name='image',
                 image=filename, mask=None,
-                ori=0, units='norm', pos=(0.70, -0.4), size=(0.5, 0.5),
+                ori=0, units='norm', pos=[notif_box_pos[0] + 0.15, notif_box_pos[1]], size=(0.5, 0.5),
                 color=[1,1,1], colorSpace='rgb', opacity=1,
                 flipHoriz=False, flipVert=False,
                 texRes=128, interpolate=True, depth=0.0)
@@ -239,7 +238,6 @@ class FocusDistractionExperiement:
                     if sum(buttons) > 0:  # state changed to a new click
                         # Mouse click on message box
                         if self.__notif_box_stim.contains(mouse_pos):  
-                            print(mouse_pos)
                             if not self.__meme_being_shown and self.__num_memes_available > 0:
                                 print("Meme shown!!!")
                                 self.__setDrawOn([self.__meme_stim])
