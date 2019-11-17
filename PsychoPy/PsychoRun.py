@@ -24,6 +24,9 @@ from os import listdir
 from os.path import join
 import sys  # to get file system encoding
 import textsupply as ts
+from pylsl import StreamInfo, StreamOutlet
+import threading
+
 
 sys.path.append('../')
 
@@ -50,6 +53,15 @@ notif_box_size_large = (notif_box_size_small[0], notif_box_size_small[1] + heigh
 memes_path = "./pics/memes"
 all_memes = listdir(memes_path)
 meme_filenames = [join(memes_path, all_memes[i]) for i in range(len(all_memes))]
+PSYCHO_PY_MARKERS = {
+    "start": "StimStart",
+    "correct": "CorrectResponse", 
+    "missed": "MissedResponse", 
+    "incorrect": "IncorrectResponse", 
+    "distracted": "Distracted",
+    "end": "End"
+}
+
 
 class FocusDistractionExperiement: 
     
@@ -64,11 +76,14 @@ class FocusDistractionExperiement:
         self.__kb = None
         self.__mouse = None
         self.__routineTimer = None
+        self.__marker_outlet = None
+        self.__eeg_outlet = None
 
         self.__current_meme = 0
         self.__num_memes_available = 0
         self.__points = 0
         self.__endExpNow = False
+
     
     def __getNavBarStims(self):
         rect_stim = visual.Rect(self.__win, 
@@ -203,7 +218,7 @@ class FocusDistractionExperiement:
                 self.__win.flip()
 
         self.__endRoutine(components)
-    def __showTimedTextWithMouseExitPoints(self, text, seconds, textSupply) :
+    def __showTimedTextWithMouseExitPoints(self, text, targetWord, seconds, textSupply) :
         stim = self.__getTextStim(text)
 
         components = [stim, self.__mouse]
@@ -239,6 +254,7 @@ class FocusDistractionExperiement:
                         # Mouse click on message box
                         if self.__notif_box_stim.contains(mouse_pos):  
                             if not self.__meme_being_shown and self.__num_memes_available > 0:
+                                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["distracted"]])
                                 print("Meme shown!!!")
                                 self.__setDrawOn([self.__meme_stim])
                                 self.__meme_being_shown = True
@@ -247,6 +263,7 @@ class FocusDistractionExperiement:
                                 self.__notif_box_stim.setSize(notif_box_size_large)
                                 self.__notif_box_stim.setPos(notif_box_pos_large)
                             elif self.__num_memes_available > 0: 
+                                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["distracted"]])
                                 self.__current_meme = ( self.__current_meme + 1 ) % len(meme_filenames)
                                 self.__meme_stim.setImage(meme_filenames[self.__current_meme])
                                 print(meme_filenames[self.__current_meme])
@@ -256,6 +273,7 @@ class FocusDistractionExperiement:
                                 self.__notif_box_stim.setSize(notif_box_size_large)
                                 self.__notif_box_stim.setPos(notif_box_pos_large)
                             else: 
+                                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["distracted"]])
                                 self.__endRoutine([self.__meme_stim])
                                 self.__meme_being_shown = False
                                 self.__notif_box_stim.setSize(notif_box_size_small)
@@ -268,10 +286,12 @@ class FocusDistractionExperiement:
                         else : # Mouse click to signal clicking on screen
                             # abort routine on response
                             continueRoutine = False
-                            if textSupply.checkInSet(text) :
+                            if textSupply.checkInSet(targetWord) :
                                 self.__points += 1
+                                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["correct"]])
                             else :
                                 self.__points -= 1
+                                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["incorrect"]])
 
 
             # Check for ESC quit
@@ -323,8 +343,33 @@ class FocusDistractionExperiement:
             frameDur = 1.0 / 60.0  # could not measure, so guess
         
         return filename, thisExp
+    def __createMarkerStream(self) : 
+        info = StreamInfo(name='PsychoPy Markers', type='Markers', channel_count=1, nominal_srate=0, channel_format='string', source_id='psychopy_thread')
+        outlet = StreamOutlet(info)
+        return outlet
 
-    def run_psychopy(self):
+    def __createEEGStream(self) : 
+        info = StreamInfo(name='OpenBCI EEG Data', type='EEG', channels=4, nominal_srate=512, channel_format='float32', source_id='eeg_thread')
+
+        # append some meta-data
+        info.desc().append_child_value("manufacturer", "OpenBCI")
+        channels = info.desc().append_child("channels")
+        for c in ["Fp1", "Fp2", "FPz", "A1"]:
+            channels.append_child("channel")\
+                .append_child_value("name", c)\
+                .append_child_value("unit", "microvolts")\
+                .append_child_value("type", "EEG")
+
+        # next make an outlet; we set the transmission chunk size to 32 samples and
+        # the outgoing buffer size to 360 seconds (max.)
+        outlet = StreamOutlet(info, 32, 360)
+        return outlet
+    
+    def runPsychopy(self):
+        # make the marker stream
+        self.__marker_outlet = self.__createMarkerStream()
+        
+  
         # Get experiement details and filename
         filename, thisExp = self.__getDatafilenameAndSetupWindow()
 
@@ -371,6 +416,7 @@ class FocusDistractionExperiement:
 
         self.__meme_being_shown = False
         total_time_elapsed = 0
+        self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["start"]])
         while textSupply.hasNext():
             word = textSupply.getNext()
 
@@ -379,18 +425,34 @@ class FocusDistractionExperiement:
                 self.__num_memes_available += 1
                 self.__notif_num_stim.setText(self.__num_memes_available)
 
-            self.__showTimedTextWithMouseExitPoints(word, 1, textSupply)
-            
+            self.__showTimedTextWithMouseExitPoints(text=word, targetWord=word, seconds=0.3, textSupply=textSupply)
+            self.__showTimedTextWithMouseExitPoints(text="", targetWord=word, seconds=0.7, textSupply=textSupply)
+
             total_time_elapsed += 1
         
         self.__endRoutine(nav_bar_stims)
+        self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["end"]])
         self.__showTextWithMouseExit("Points: " + str(self.__points))
         logging.flush()
         # make sure everything is closed down
         thisExp.abort()  # or data files will save again on exit
         self.__win.close()
         #core.quit()
+    def __collectEEG(self):
+        #while true collece EEG data
+        self.__eeg_outlet.push_sample(mysample, stamp)
 
+
+    def runSession(self): 
+        self.__eeg_outlet = self.__createEEGStream()
+        eeg_thread = threading.Thread(target=__collectEEG, args=(self,))
+        eeg_thread.start()
+        psychopy_thread = threading.Thread(target=runPsychopy, args=(self,))
+        psychopy_thread.start()
+        psychopy_thread.join()
+        eeg_thread.stop()
+    
+        
 
 myExperiment = FocusDistractionExperiement() 
-myExperiment.run_psychopy()
+myExperiment.runPsychopy()
