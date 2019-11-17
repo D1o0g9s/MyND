@@ -41,18 +41,22 @@ os.chdir(_thisDir)
 introductionText = "NeuroFocus"
 instructionsText = "Memorize the initial list of words and click when the word had just appeared on the screen. \n\nYou have 10 minutes to get through the entire article. \n\nThere are XXX words to find."
 
-notif_box_pos = (0.5, -0.4)
-height_inc = 0.16
-notif_box_pos_large = (notif_box_pos[0], notif_box_pos[1] + height_inc)
-notif_cicle_pos = (notif_box_pos[0] - 0.2, notif_box_pos[1])
-notif_text_pos = (notif_box_pos[0] - 0.1, notif_box_pos[1])
-notif_num_pos = (notif_text_pos[0] + 0.1, notif_box_pos[1])
-notif_box_size_small = (1, 0.1)
-notif_box_size_large = (notif_box_size_small[0], notif_box_size_small[1] + height_inc * 4)
+# notif_box_pos = (0.5, -0.4)
+# height_inc = 0.16
+# notif_box_pos_large = (notif_box_pos[0], notif_box_pos[1] + height_inc)
+# notif_cicle_pos = (notif_box_pos[0] - 0.2, notif_box_pos[1])
+# notif_text_pos = (notif_box_pos[0] - 0.1, notif_box_pos[1])
+# notif_num_pos = (notif_text_pos[0] + 0.1, notif_box_pos[1])
+# notif_box_size_small = (1, 0.1)
+# notif_box_size_large = (notif_box_size_small[0], notif_box_size_small[1] + height_inc * 4)
+
+image_pos = (0.75, 0)
+points_pos = (0, 0.3)
 
 memes_path = "./pics/memes"
 all_memes = listdir(memes_path)
 meme_filenames = [join(memes_path, all_memes[i]) for i in range(len(all_memes))]
+
 PSYCHO_PY_MARKERS = {
     "start": "StimStart",
     "correct": "CorrectResponse", 
@@ -66,25 +70,26 @@ PSYCHO_PY_MARKERS = {
 class FocusDistractionExperiement: 
     
     def __init__(self): 
-        self.__notif_box_stim = None
-        self.__meme_stim = None
+        # self.__notif_box_stim = None
+        
         # self.__notif_stim = None
-        self.__notif_circle_stim = None
-        self.__notif_num_stim = None
+        # self.__notif_circle_stim = None
+        # self.__notif_num_stim = None
         self.__win = None
         self.__routineTimer = None
         self.__kb = None
         self.__mouse = None
-        self.__routineTimer = None
         self.__marker_outlet = None
         self.__eeg_outlet = None
+        self.__meme_stim = None
+        self.__points_stim = None
 
         self.__current_meme = 0
-        self.__num_memes_available = 0
+        # self.__num_memes_available = 0
         self.__points = 0
         self.__endExpNow = False
 
-    
+    '''
     def __getNavBarStims(self):
         rect_stim = visual.Rect(self.__win, 
             autoLog=None, units='', lineWidth=1.5, lineColor='white', 
@@ -118,7 +123,18 @@ class FocusDistractionExperiement:
         self.__notif_num_stim = num_stim
         self.__notif_box_stim = rect_stim
         return [rect_stim, num_stim, circle_stim, text_stim]
-    
+    '''
+    def __getPointsStim(self): 
+        points_stim = visual.TextStim(win=self.__win, name='textStim',
+            text="Points: 0",
+            font='Arial', units='',
+            pos=points_pos, height=0.02, wrapWidth=None, ori=0,
+            color='white', colorSpace='rgb', opacity=1,
+            languageStyle='LTR',
+            depth=0.0)
+        self.__points_stim = points_stim
+        return [points_stim]
+
     def __getTextStim(self, text): 
         return visual.TextStim(win=self.__win, name='textStim',
             text=text,
@@ -132,7 +148,7 @@ class FocusDistractionExperiement:
             return visual.ImageStim(
                 win=self.__win, name='image',
                 image=filename, mask=None,
-                ori=0, units='norm', pos=[notif_box_pos[0] + 0.15, notif_box_pos[1]], size=(0.5, 0.5),
+                ori=0, units='norm', pos=image_pos, size=(0.5, 0.5),
                 color=[1,1,1], colorSpace='rgb', opacity=1,
                 flipHoriz=False, flipVert=False,
                 texRes=128, interpolate=True, depth=0.0)
@@ -154,6 +170,7 @@ class FocusDistractionExperiement:
                 thisComponent.setAutoDraw(False)
                 thisComponent.status = NOT_STARTED 
 
+    
     def __showTextWithMouseExit(self, text): 
         
         stim = self.__getTextStim(text)
@@ -225,16 +242,17 @@ class FocusDistractionExperiement:
 
         self.__startRoutine(components)
         continueRoutine = True
+        clicked=False
         self.__routineTimer.add(seconds)
         while continueRoutine and self.__routineTimer.getTime() > 0:
             
             self.__setDrawOn([stim])
 
             # show the "you have notification image"
-            if (self.__num_memes_available > 0): 
-                self.__setDrawOn([self.__notif_circle_stim])
-            else :
-                self.__endRoutine([self.__notif_circle_stim])
+            # if (self.__num_memes_available > 0): 
+            #     self.__setDrawOn([self.__notif_circle_stim])
+            # else :
+            #     self.__endRoutine([self.__notif_circle_stim])
 
 
             # Start mouse if not started
@@ -243,6 +261,12 @@ class FocusDistractionExperiement:
                 self.__mouse.status = STARTED
                 prevButtonState = self.__mouse.getPressed()  # if button is down already this ISN'T a new click
 
+            if not self.__meme_being_shown:
+                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["distracted"]])
+                print("Meme shown!!!")
+                self.__setDrawOn([self.__meme_stim])
+                self.__meme_being_shown = True
+                
             # Check if mouse pressed
             if self.__mouse.status == STARTED:  # only update if started and not finished!
                 buttons = self.__mouse.getPressed()
@@ -251,49 +275,23 @@ class FocusDistractionExperiement:
                     prevButtonState = buttons
                     
                     if sum(buttons) > 0:  # state changed to a new click
-                        # Mouse click on message box
-                        if self.__notif_box_stim.contains(mouse_pos):  
-                            if not self.__meme_being_shown and self.__num_memes_available > 0:
-                                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["distracted"]])
-                                print("Meme shown!!!")
-                                self.__setDrawOn([self.__meme_stim])
-                                self.__meme_being_shown = True
-                                self.__num_memes_available -= 1
-                                self.__notif_num_stim.setText(self.__num_memes_available)
-                                self.__notif_box_stim.setSize(notif_box_size_large)
-                                self.__notif_box_stim.setPos(notif_box_pos_large)
-                            elif self.__num_memes_available > 0: 
-                                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["distracted"]])
-                                self.__current_meme = ( self.__current_meme + 1 ) % len(meme_filenames)
-                                self.__meme_stim.setImage(meme_filenames[self.__current_meme])
-                                print(meme_filenames[self.__current_meme])
+                        # abort routine on response
+                        # continueRoutine = False
+                        clicked=True
+                        if textSupply.checkInSet(targetWord) :
+                            self.__points += 1
+                            self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["correct"]])
+                            self.__points_stim.color='green'
+                            self.__points_stim.text="Points: " + str(self.__points)
+                            stim.color='green'
+                        else :
+                            self.__points -= 1
+                            self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["incorrect"]])
+                            self.__points_stim.color='red'
+                            self.__points_stim.text="Points: " + str(self.__points)
+                            stim.color='red'
 
-                                self.__num_memes_available -= 1
-                                self.__notif_num_stim.setText(self.__num_memes_available)
-                                self.__notif_box_stim.setSize(notif_box_size_large)
-                                self.__notif_box_stim.setPos(notif_box_pos_large)
-                            else: 
-                                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["distracted"]])
-                                self.__endRoutine([self.__meme_stim])
-                                self.__meme_being_shown = False
-                                self.__notif_box_stim.setSize(notif_box_size_small)
-                                self.__notif_box_stim.setPos(notif_box_pos)
-
-                                self.__current_meme = ( self.__current_meme + 1 ) % len(meme_filenames)
-                                self.__meme_stim.setImage(meme_filenames[self.__current_meme])
-                                print(meme_filenames[self.__current_meme])
-                                
-                        else : # Mouse click to signal clicking on screen
-                            # abort routine on response
-                            continueRoutine = False
-                            if textSupply.checkInSet(targetWord) :
-                                self.__points += 1
-                                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["correct"]])
-                            else :
-                                self.__points -= 1
-                                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["incorrect"]])
-
-
+            
             # Check for ESC quit
             if self.__endExpNow or 'escape' in self.__kb.getKeys(['escape'], waitRelease=True):
                 core.quit()
@@ -301,6 +299,12 @@ class FocusDistractionExperiement:
             # refresh the screen
             if continueRoutine:  # don't flip if this routine is over or we'll get a blank screen
                 self.__win.flip()
+
+        if text == "" and not clicked and textSupply.checkInSet(targetWord):
+            self.__points -= 1
+            self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["incorrect"]])
+            self.__points_stim.text="Points: " + str(self.__points)
+            self.__points_stim.color='red'
 
         self.__endRoutine(components)
     def __getDatafilenameAndSetupWindow(self): 
@@ -366,7 +370,7 @@ class FocusDistractionExperiement:
         return outlet
     
     def runPsychopy(self):
-        # make the marker stream
+        # make the marker stream. Must do before the window setup to be able to start Lab Recorder
         self.__marker_outlet = self.__createMarkerStream()
         
   
@@ -387,9 +391,8 @@ class FocusDistractionExperiement:
         self.__kb = keyboard.Keyboard()
 
         # Show instructions
-        self.__showTextWithMouseExit(introductionText)
+        self.__showTimedText(introductionText, 1)
         self.__showTextWithMouseExit(instructionsText)
-
 
         # Reset the timers
         self.__routineTimer.reset()
@@ -410,9 +413,13 @@ class FocusDistractionExperiement:
         self.__meme_stim = self.__getImageStim(meme_filenames[self.__current_meme])
         self.__startRoutine([self.__meme_stim])
         
-        nav_bar_stims = self.__getNavBarStims()
-        self.__startRoutine(nav_bar_stims)
-        self.__setDrawOn(nav_bar_stims)
+        # nav_bar_stims = self.__getNavBarStims()
+        # self.__startRoutine(nav_bar_stims)
+        # self.__setDrawOn(nav_bar_stims)
+        points_stims = self.__getPointsStim()
+        self.__startRoutine(points_stims)
+        self.__setDrawOn(points_stims)
+
 
         self.__meme_being_shown = False
         total_time_elapsed = 0
@@ -422,15 +429,16 @@ class FocusDistractionExperiement:
 
             # add one meme every 5 seconds 
             if total_time_elapsed > 0 and total_time_elapsed % 5 == 0: 
-                self.__num_memes_available += 1
-                self.__notif_num_stim.setText(self.__num_memes_available)
+                self.__current_meme = ( self.__current_meme + 1 ) % len(meme_filenames)
+                self.__meme_stim.setImage(meme_filenames[self.__current_meme])
 
             self.__showTimedTextWithMouseExitPoints(text=word, targetWord=word, seconds=0.3, textSupply=textSupply)
             self.__showTimedTextWithMouseExitPoints(text="", targetWord=word, seconds=0.7, textSupply=textSupply)
+            self.__points_stim.color='white'
 
             total_time_elapsed += 1
         
-        self.__endRoutine(nav_bar_stims)
+        # self.__endRoutine(nav_bar_stims)
         self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["end"]])
         self.__showTextWithMouseExit("Points: " + str(self.__points))
         logging.flush()
