@@ -1,6 +1,6 @@
 
 # MyND: My Neuro Detector
-MyND is a project that attempts to characterize Flow and predict distraction states through scalp EEG. 
+My Neuro Detector (MyND) is a project that attempts to characterize focus and predict distraction states through scalp EEG. 
 
 ## EEG Details
 
@@ -23,25 +23,32 @@ EEG, EyeTracker, and PsychoPy Marker streams --> XDF
    - A decorated version was used to collect data for this project. See webgazerListener.js
 3) OpenBCI Cyton Board V3 https://github.com/OpenBCI/pyOpenBCI 
 
+## Project Versions
+
+- V0.1.2 : Includes Psychopy, Calibration, OpenBCI, and EyeTracker
+- V0.1.1 : Includes Psychopy, OpenBCI, and EyeTracker
+- V0.1.0 : Includes Psychopy and OpenBCI
+- V0.0.1 : NeuroSky, NeuroSky data analysis
 
 ## References
 
 ### Webgazer 
-Alexandra Papoutsaki and Patsorn Sangkloy and James Laskey and Nediyana Daskalova and Jeff Huang and James Hays (2016). WebGazer: Scalable Webcam Eye Tracking Using User Interactions. Proceedings of the 25th International Joint Conference on Artificial Intelligence (IJCAI). 
+- Alexandra Papoutsaki and Patsorn Sangkloy and James Laskey and Nediyana Daskalova and Jeff Huang and James Hays (2016). WebGazer: Scalable Webcam Eye Tracking Using User Interactions. Proceedings of the 25th International Joint Conference on Artificial Intelligence (IJCAI). 
 https://webgazer.cs.brown.edu/ 
 
 ### Neurodsp
-Cole, S., Donoghue, T., Gao, R., & Voytek, B. (2019). NeuroDSP: A package for
+- Cole, S., Donoghue, T., Gao, R., & Voytek, B. (2019). NeuroDSP: A package for
 neural digital signal processing. Journal of Open Source Software, 4(36), 1272.
 https://doi.org/10.21105/joss.01272
 
-
+### de Sa Lab: Ollie's Seg Speller Offline Processing
+- https://github.com/ollie-d/SegSpeller/blob/master/Offline%20Processing.ipynb 
 
 ### Article Sources
-https://sapienlabs.org/finding-an-alternative-to-connectionism/ 
-https://iopscience.iop.org/article/10.1088/1741-2552/ab355c/meta
+- https://sapienlabs.org/finding-an-alternative-to-connectionism/ 
+- https://iopscience.iop.org/article/10.1088/1741-2552/ab355c/meta
 
 
 ### Meme Sources 
-https://cleanmemes.com/ 
-https://www.reddit.com/r/memes/ 
+- https://cleanmemes.com/ 
+- https://www.reddit.com/r/memes/ 
