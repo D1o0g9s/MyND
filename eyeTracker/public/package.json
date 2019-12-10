@@ -1,0 +1,12 @@
+{
+  "name": "landingpage",
+  "version": "1.0.0",
+  "description": "my landing page",
+  "main": "app.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "ws": "^7.2.0"
+  }
+}

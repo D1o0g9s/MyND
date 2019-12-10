@@ -1,0 +1,16 @@
+body {
+    font-family: 'Monaco';
+    background-color:rgba(70, 40, 100, 1);
+}
+
+svg { border: 1px dashed black; }
+
+#predValues {
+    position: absolute;
+    top: 50px;
+    left: 400px;
+    z-index: 10;
+    color:white;
+}
+
+
