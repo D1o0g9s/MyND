@@ -57,7 +57,7 @@ instructionsText2 = "There will be " + str(NUM_TO_READ) + " articles for you to 
     "Each article will have different target letters.\n\n"\
     "A list of letters for you to memorize will appear next."
 
-image_pos = (0.75, 0)
+image_pos = (0.65, 0)
 image_pos_2 = (-0.75, 0)
 word_pos = (-0.4, 0)
 points_pos = (0, 0.3)
@@ -78,16 +78,22 @@ if (two_memes):
     rd.shuffle(meme_filenames2)
 
 PSYCHO_PY_MARKERS = {
-    "start": "StimStart",
-    "memorizationStart": "MemorizationStart",
-    "memorizationStop": "MemorizationStop",
-    "newWord": "NewWord",
-    "newMeme": "NewMeme",
-    "spacePressed": "SpacePressed",
-    "correct": "CorrectResponse", 
-    "missed": "MissedResponse", 
-    "incorrect": "IncorrectResponse", 
-    "end": "StimEnd"
+    "psychopyStart": "--PsychopyStart",
+    "calibrationStart": "--CalibrationStart",
+    "calibrationStop": "--CalibrationStop",
+    "instructionStart": "--InstructionStart",
+    "instructionStop": "--InstructionStop",
+    "start": "--StimStart",
+    "memorizationStart": "--MemorizationStart",
+    "memorizationStop": "--MemorizationStop",
+    "newWord": "--NewWord",
+    "newMeme": "--NewMeme",
+    "newArticle": "--NewArticle",
+    "spacePressed": "--SpacePressed",
+    "correct": "--CorrectResponse", 
+    "missed": "--MissedResponse", 
+    "incorrect": "--IncorrectResponse", 
+    "end": "--StimEnd"
 }
 
 
@@ -184,7 +190,9 @@ class FocusDistractionExperiement:
 
             # Check if space pressed
             if 'space' in self.__kb.getKeys(['space'], waitRelease=True): 
-                self.__marker_outlet.push_sample(["SpacePressed,"+str(location)+","+text])
+                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["spacePressed"]])
+                self.__marker_outlet.push_sample([str(location)])
+                self.__marker_outlet.push_sample([text])
                 continueRoutine = False
 
             # Check for ESC quit 
@@ -314,7 +322,7 @@ class FocusDistractionExperiement:
         ### Window Setup ###
         ####################
         self.__win = visual.Window(
-            size=(1440, 900), fullscr=True, screen=0,
+            size=(1430, 870), fullscr=False, screen=0,
             allowGUI=False, allowStencil=True,
             monitor='testMonitor', color=[0,0,0], colorSpace='rgb',
             blendMode='avg', useFBO=True,
@@ -355,14 +363,16 @@ class FocusDistractionExperiement:
         self.__kb = keyboard.Keyboard()
 
         # Show instructions
+        self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["psychopyStart"]])
+
         self.__showTimedText(introductionText, 1)
         self.__showTextWithSpaceExit(calibrationText)
 
-        LEFT_X_COORD = -0.55
-        RIGHT_X_COORD = 0.55
+        LEFT_X_COORD = -0.6
+        RIGHT_X_COORD = 0.6
         TOP_Y_COORD = -0.45
         BOTTOM_Y_COORD = 0.45
-
+        self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["calibrationStart"]])
         self.__showTextWithSpaceExit(lookHereText, location=(LEFT_X_COORD, 0), add_instr=False)
         self.__showTextWithSpaceExit(lookHereText, location=(RIGHT_X_COORD, 0), add_instr=False)
         self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False)
@@ -379,9 +389,11 @@ class FocusDistractionExperiement:
         self.__showTextWithSpaceExit(blinkText, add_instr=False)
         self.__showTextWithSpaceExit(closeEyeText, add_instr=False)
 
-
+        self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["calibrationStop"]])
+        self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["instructionStart"]])
         self.__showTextWithSpaceExit(instructionsText1)
         self.__showTextWithSpaceExit(instructionsText2)
+        self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["instructionStop"]])
 
         experiment_components = []
         experiment_components.append(self.__getMemeStim(meme_filenames[self.__current_meme]))
@@ -395,6 +407,8 @@ class FocusDistractionExperiement:
         
         self.__setDrawOn([self.__points_stim])
         while (len(textSupply.files_read) < NUM_TO_READ) and (not textSupply.getAnotherArticle()): 
+            self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["newArticle"]])
+            self.__marker_outlet.push_sample([textSupply.getArticlePath()])
             # Get the article targets
             targets = textSupply.getTargets()
             targetsString = "Identify any words with these letters:"
@@ -419,13 +433,15 @@ class FocusDistractionExperiement:
                 if len(textSupply.files_read) > 1 and total_time_elapsed % 5 == 0: 
                     self.__current_meme = ( self.__current_meme + 1 ) % len(meme_filenames)
                     self.__meme_stim.setImage(meme_filenames[self.__current_meme])
+                    
                     if (two_memes) :
                         self.__meme_stim2.setImage(meme_filenames2[self.__current_meme])
 
                     self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["newMeme"]])
                     self.__marker_outlet.push_sample([meme_filenames[self.__current_meme]])
                 self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["newWord"]])
-                self.__showWordWithSpaceExitPoints(targetWord=word, seconds=1, textSupply=textSupply)
+                self.__marker_outlet.push_sample([word])
+                self.__showWordWithSpaceExitPoints(targetWord=word, seconds=1.1, textSupply=textSupply)
                 self.__points_stim.color='white'
 
                 if (len(textSupply.files_read) > 1): 

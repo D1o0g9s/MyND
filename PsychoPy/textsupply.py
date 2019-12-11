@@ -83,7 +83,9 @@ class TextSupplier:
             if char in cleaned_word: 
                 return True
         return False
-        
+    
+    def getArticlePath(self):
+        return self.current_article
         # if cleaned_word in self.targets:
         #     return True
         # else: 
