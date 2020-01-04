@@ -21,11 +21,13 @@ from enum import Enum
 
 import os  # handy system and path functions
 import sys  # to get file system encoding
-import textsupply as ts
 from pylsl import StreamInfo, StreamOutlet
 import threading
 from pyOpenBCI import OpenBCICyton
-
+import pickle
+import heapq
+import textsupply as ts
+from PsychoPyConstants import *
 
 
 sys.path.append('../')
@@ -34,41 +36,14 @@ sys.path.append('../')
 _thisDir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(_thisDir)
 
-
 #############################
 ### Initialize variables ###
 #############################
 
-NUM_TO_READ = 3 # Number of articles to read. 
-
-
-introductionText = "MyND: MyNeuroDetector"
-instructionsText1 = "Instructions: \n\n"+\
-    "Your task is to identify all words that contain the target letters. \n\n"+\
-    "Press the space bar when you see a word with at least one of the target letters. \n\n"+\
-    "Points++ if identified correctly\nPoints-- if incorrectly identified\n\nTry to get as many points as possible!"
-calibrationText = "Calibration stage \n\nFollow the instructions that pop up, while keeping head as still as possible." 
-lookHereText = "Look Here\nthen Press Space"
-blinkText = "Blink twice\nthen Press Space"
-closeEyeText = "Close your eyes and count to 5\n\nthen Press Space"
-
-
-instructionsText2 = "There will be " + str(NUM_TO_READ) + " articles for you to read. \n\n"\
-    "Each article will have different target letters.\n\n"\
-    "A list of letters for you to memorize will appear next."
-
-image_pos = (0.65, 0)
-image_pos_2 = (-0.75, 0)
-word_pos = (-0.4, 0)
-points_pos = (0, 0.3)
-PERCENT_SHOW = 0.8 # Percentage of time the text should be shown in TimedTextWithSpaceExit
-
-SCALE_FACTOR_EEG = (4500000)/24/(2**23-1) #uV/count
-SCALE_FACTOR_AUX = 0.002 / (2**4)
-
 two_memes = False
 
 memes_path = "./pics/memes"
+leaderboard_path = "./leaderboard.csv"
 all_memes = os.listdir(memes_path)
 meme_filenames = [os.path.join(memes_path, all_memes[i]) for i in range(len(all_memes))]
 rd.shuffle(meme_filenames)
@@ -76,27 +51,6 @@ rd.shuffle(meme_filenames)
 if (two_memes):
     meme_filenames2 = list(meme_filenames)
     rd.shuffle(meme_filenames2)
-
-PSYCHO_PY_MARKERS = {
-    "psychopyStart": "--PsychopyStart",
-    "calibrationStart": "--CalibrationStart",
-    "calibrationStop": "--CalibrationStop",
-    "instructionStart": "--InstructionStart",
-    "instructionStop": "--InstructionStop",
-    "start": "--StimStart",
-    "memorizationStart": "--MemorizationStart",
-    "memorizationStop": "--MemorizationStop",
-    "newWord": "--NewWord",
-    "newMeme": "--NewMeme",
-    "newArticle": "--NewArticle",
-    "spacePressed": "--SpacePressed",
-    "correct": "--CorrectResponse", 
-    "missed": "--MissedResponse", 
-    "incorrect": "--IncorrectResponse", 
-    "end": "--StimEnd"
-}
-
-
 
 class FocusDistractionExperiement: 
     
@@ -107,22 +61,31 @@ class FocusDistractionExperiement:
         self.__kb = None
         self.__meme_stim = None
         self.__points_stim = None
+        self.__letters_stim = None
 
         self.__board = None
         self.__marker_outlet = None
         self.__outlet_eeg = None
         self.__outlet_aux = None
 
-
         self.__current_meme = 0
         self.__points = 0
         self.__endExpNow = False
 
-    def __getTextStim(self, text, location=(0,0)): 
+    def __getTextStim(self, text, location=(0,0), height=0.05): 
         return visual.TextStim(win=self.__win, name='textStim',
             text=text,
             font='Arial',
-            pos=location, height=0.05, wrapWidth=None, ori=0,
+            pos=location, height=height, wrapWidth=None, ori=0,
+            color='white', colorSpace='rgb', opacity=1,
+            languageStyle='LTR',
+            depth=0.0)
+        
+    def __getLettersStim(self, text): 
+        return visual.TextStim(win=self.__win, name='textStim',
+            text=text,
+            font='Arial',
+            pos=(0, 0.1), height=0.02, wrapWidth=None, ori=0,
             color='white', colorSpace='rgb', opacity=1,
             languageStyle='LTR',
             depth=0.0)
@@ -176,9 +139,9 @@ class FocusDistractionExperiement:
                 thisComponent.status = NOT_STARTED 
 
     
-    def __showTextWithSpaceExit(self, text, location=(0, 0), add_instr=True): 
+    def __showTextWithSpaceExit(self, text, location=(0, 0), add_instr=True, height=0.05): 
         
-        stim = self.__getTextStim(text + ("\n\n>> Press Space to advance." if add_instr else ""), location=location)
+        stim = self.__getTextStim(text + ("\n\n>> Press Space to advance." if add_instr else ""), location=location, height=height)
         components = [stim]
         self.__startRoutine(components)
 
@@ -190,9 +153,9 @@ class FocusDistractionExperiement:
 
             # Check if space pressed
             if 'space' in self.__kb.getKeys(['space'], waitRelease=True): 
-                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["spacePressed"]])
                 self.__marker_outlet.push_sample([str(location)])
                 self.__marker_outlet.push_sample([text])
+                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["spacePressed"]])
                 continueRoutine = False
 
             # Check for ESC quit 
@@ -241,6 +204,16 @@ class FocusDistractionExperiement:
         self.__routineTimer.reset()
         self.__routineTimer.add(seconds)
 
+        self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["newWord"]])
+        self.__marker_outlet.push_sample([str(self.__points)])
+        self.__marker_outlet.push_sample([targetWord])
+        self.__marker_outlet.push_sample([str(seconds)])
+
+        if textSupply.checkInSet(targetWord) :
+            self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["targetWord"]])
+        else :
+            self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["notTargetWord"]])
+        correctness=False
         continueRoutine = True 
         changedToBlank = False
         responded=False # to keep track of whether or not space was pressed this round
@@ -250,32 +223,43 @@ class FocusDistractionExperiement:
 
             if (self.__routineTimer.getTime() < seconds * (1 - PERCENT_SHOW)) and not changedToBlank: 
                 stim.text=""
+                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["blank"]])
                 changedToBlank = True
 
-            if (len(textSupply.files_read) > 1) and (not self.__meme_being_shown):
+            if self.__meme_should_be_shown and (not self.__meme_being_shown) and (self.__points > 0 if POSITIVE_POINTS_MEMES_ONLY else True):
                 print("Meme shown!!!")
+                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["memeShown"]])
                 self.__setDrawOn([self.__meme_stim])
                 if(two_memes):
                     self.__setDrawOn([self.__meme_stim2])
                 self.__meme_being_shown = True
+            elif not self.__meme_should_be_shown and self.__meme_being_shown:
+                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["memeHidden"]])
+                self.__endRoutine([self.__meme_stim])
+                self.__meme_being_shown = False
+
                 
             # Check if space pressed
-            if 'space' in self.__kb.getKeys(['space'], waitRelease=True): 
+            if ('space' in self.__kb.getKeys(['space'], waitRelease=False)) and (not responded): 
                 self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["spacePressed"]])
                 responded=True
                 if textSupply.checkInSet(targetWord) :
                     self.__points += 1
-                    self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["correct"]])
-                    self.__points_stim.color='green'
+                    correctness=True
                     self.__points_stim.text="Points: " + str(self.__points)
                     stim.color='green'
                 else :
                     self.__points -= 1
-                    self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["incorrect"]])
-                    self.__points_stim.color='red'
+                    correctness=False
                     self.__points_stim.text="Points: " + str(self.__points)
                     stim.color='red'
 
+            # Check if m pressed
+            if ('m' in self.__kb.getKeys(['m'], waitRelease=False)): 
+                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["lettersShown"]])
+                self.__points -= 1
+                self.__points_stim.text="Points: " + str(self.__points)
+                self.__setDrawOn([self.__letters_stim])
             
             # Check for ESC quit
             if self.__endExpNow or 'escape' in self.__kb.getKeys(['escape'], waitRelease=True):
@@ -287,20 +271,28 @@ class FocusDistractionExperiement:
             if continueRoutine:  # don't flip if this routine is over or we'll get a blank screen
                 self.__win.flip()
 
-        if not responded and textSupply.checkInSet(targetWord):
-            self.__points -= 1
-            self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["missed"]])
+        if not responded : 
+            self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["spaceNotPressed"]])
+            if textSupply.checkInSet(targetWord):
+                correctness=False
+                self.__points -= 1
+                self.__points_stim.text="Points: " + str(self.__points)
+            else :
+                correctness=True
+        if correctness: 
+            self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["correct"]])
+        else :
             self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["incorrect"]])
-            self.__points_stim.text="Points: " + str(self.__points)
-            self.__points_stim.color='red'
-
+        self.__marker_outlet.push_sample([str(self.__points)])
+        self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["endWord"]])
+        self.__endRoutine([self.__letters_stim])
         self.__endRoutine(components)
     def __getDatafilenameAndSetupWindow(self): 
         #################
         ### Start Box ###
         #################
         psychopyVersion = '3.0.5'
-        expName = 'NeuroFocus'  # from the Builder filename that created this script
+        expName = 'MyND'  # from the Builder filename that created this script
         expInfo = {'participant': '', 'session': '001'}
         dlg = gui.DlgFromDict(dictionary=expInfo, title=expName)
         if dlg.OK == False:
@@ -310,7 +302,7 @@ class FocusDistractionExperiement:
         expInfo['psychopyVersion'] = psychopyVersion
 
         # Data file name stem = absolute path + name; later add .psyexp, .csv, .log, etc
-        filename = _thisDir + os.sep + u'data/%s_%s_%s' % (expInfo['participant'], expName, expInfo['date'])
+        filename = _thisDir + os.sep + u'data/%s_%s_%s_%s' % (expInfo['participant'], expInfo['session'], expName, expInfo['date'])
         
         # An ExperimentHandler isn't essential but helps with data saving
         thisExp = data.ExperimentHandler(name=expName, version='',
@@ -334,7 +326,7 @@ class FocusDistractionExperiement:
         else:
             frameDur = 1.0 / 60.0  # could not measure, so guess
         
-        return filename, thisExp
+        return filename, thisExp, expInfo
     def __createMarkerStream(self) : 
         info = StreamInfo(name='PsychoPy Markers', 
             type='Markers', channel_count=1, nominal_srate=0, 
@@ -348,7 +340,7 @@ class FocusDistractionExperiement:
         
   
         # Get experiement details and filename
-        filename, thisExp = self.__getDatafilenameAndSetupWindow()
+        filename, thisExp, expInfo = self.__getDatafilenameAndSetupWindow()
 
         # save a log file for detail verbose info
         logFile = logging.LogFile(filename+'.log', level=logging.EXP)
@@ -362,37 +354,38 @@ class FocusDistractionExperiement:
         self.__routineTimer = core.CountdownTimer()  # to track time remaining of each (non-slip) routine
         self.__kb = keyboard.Keyboard()
 
-        # Show instructions
+        # Flag the start of the Psychopy experiment
         self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["psychopyStart"]])
 
+        # Show name of experiment and begin calibration
         self.__showTimedText(introductionText, 1)
         self.__showTextWithSpaceExit(calibrationText)
-
-        LEFT_X_COORD = -0.6
-        RIGHT_X_COORD = 0.6
-        TOP_Y_COORD = -0.45
-        BOTTOM_Y_COORD = 0.45
         self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["calibrationStart"]])
-        self.__showTextWithSpaceExit(lookHereText, location=(LEFT_X_COORD, 0), add_instr=False)
-        self.__showTextWithSpaceExit(lookHereText, location=(RIGHT_X_COORD, 0), add_instr=False)
-        self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False)
-        self.__showTextWithSpaceExit(lookHereText, location=(0, TOP_Y_COORD), add_instr=False)
-        self.__showTextWithSpaceExit(lookHereText, location=(0, BOTTOM_Y_COORD), add_instr=False)
-        self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False)
-        self.__showTextWithSpaceExit(lookHereText, location=(RIGHT_X_COORD, TOP_Y_COORD), add_instr=False)
-        self.__showTextWithSpaceExit(lookHereText, location=(RIGHT_X_COORD, BOTTOM_Y_COORD), add_instr=False)
-        self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False)
-        self.__showTextWithSpaceExit(lookHereText, location=(LEFT_X_COORD, TOP_Y_COORD), add_instr=False)
-        self.__showTextWithSpaceExit(lookHereText, location=(LEFT_X_COORD, BOTTOM_Y_COORD), add_instr=False)
-        self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False)
-        
+
         self.__showTextWithSpaceExit(blinkText, add_instr=False)
+        self.__showTextWithSpaceExit(openEyeText, add_instr=False)
         self.__showTextWithSpaceExit(closeEyeText, add_instr=False)
+        
+        self.__showTextWithSpaceExit(lookHereText, location=(LEFT_X_COORD, 0), add_instr=False, height=0.02)
+        self.__showTextWithSpaceExit(lookHereText, location=(RIGHT_X_COORD, 0), add_instr=False, height=0.02)
+        self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False, height=0.02)
+        self.__showTextWithSpaceExit(lookHereText, location=(0, TOP_Y_COORD), add_instr=False, height=0.02)
+        self.__showTextWithSpaceExit(lookHereText, location=(0, BOTTOM_Y_COORD), add_instr=False, height=0.02)
+        self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False, height=0.02)
+        self.__showTextWithSpaceExit(lookHereText, location=(RIGHT_X_COORD, TOP_Y_COORD), add_instr=False, height=0.02)
+        self.__showTextWithSpaceExit(lookHereText, location=(RIGHT_X_COORD, BOTTOM_Y_COORD), add_instr=False, height=0.02)
+        self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False, height=0.02)
+        self.__showTextWithSpaceExit(lookHereText, location=(LEFT_X_COORD, TOP_Y_COORD), add_instr=False, height=0.02)
+        self.__showTextWithSpaceExit(lookHereText, location=(LEFT_X_COORD, BOTTOM_Y_COORD), add_instr=False, height=0.02)
+        self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False, height=0.02)
+        
+        
 
         self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["calibrationStop"]])
         self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["instructionStart"]])
         self.__showTextWithSpaceExit(instructionsText1)
         self.__showTextWithSpaceExit(instructionsText2)
+        self.__showTextWithSpaceExit(instructionsText3)
         self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["instructionStop"]])
 
         experiment_components = []
@@ -411,7 +404,7 @@ class FocusDistractionExperiement:
             self.__marker_outlet.push_sample([textSupply.getArticlePath()])
             # Get the article targets
             targets = textSupply.getTargets()
-            targetsString = "Identify any words with these letters:"
+            targetsString = "Identify any words with these letters by pressing 'space'\nPress 'm' to display the letters later:"
             for target in targets:
                 targetsString = targetsString + "\n\n" + target
 
@@ -419,40 +412,85 @@ class FocusDistractionExperiement:
             self.__showTextWithSpaceExit(targetsString)
             self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["memorizationStop"]])
 
+            targetsString = ""
+            for target in targets:
+                if(targetsString == "") : 
+                    targetsString = target
+                else :
+                    targetsString = targetsString + ", " + target
+            self.__letters_stim = self.__getLettersStim(targetsString)
+            self.__startRoutine([self.__letters_stim])
+
+
             # Reset the timers
             self.__routineTimer.reset()
             self.__kb.clock.reset() 
             total_time_elapsed = 0
             self.__meme_being_shown = False
-            self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["start"]])
+            self.__meme_should_be_shown = False
+            self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["responseStart"]])
+
 
             while textSupply.hasNext():
                 word = textSupply.getNext()
 
-                # Starting with the second article, add one meme every 5 seconds 
-                if len(textSupply.files_read) > 1 and total_time_elapsed % 5 == 0: 
-                    self.__current_meme = ( self.__current_meme + 1 ) % len(meme_filenames)
-                    self.__meme_stim.setImage(meme_filenames[self.__current_meme])
-                    
-                    if (two_memes) :
-                        self.__meme_stim2.setImage(meme_filenames2[self.__current_meme])
+                # Starting with the second article, add change meme every 5 seconds 
+                if len(textSupply.files_read) > NUM_ARTICLES_WITHOUT_MEMES and total_time_elapsed > 5: 
+                    if total_time_elapsed % 6 == 0: 
+                        self.__current_meme = ( self.__current_meme + 1 ) % len(meme_filenames)
+                        self.__meme_stim.setImage(meme_filenames[self.__current_meme])
+                        
+                        if (two_memes) :
+                            self.__meme_stim2.setImage(meme_filenames2[self.__current_meme])
 
-                    self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["newMeme"]])
-                    self.__marker_outlet.push_sample([meme_filenames[self.__current_meme]])
-                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["newWord"]])
-                self.__marker_outlet.push_sample([word])
-                self.__showWordWithSpaceExitPoints(targetWord=word, seconds=1.1, textSupply=textSupply)
+                        self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["newMeme"]])
+                        self.__marker_outlet.push_sample([meme_filenames[self.__current_meme]])
+                    if total_time_elapsed % 3 == 0 :
+                        self.__meme_should_be_shown = not self.__meme_should_be_shown
+                
+                randInterval = rd.uniform(RAND_SECS_LOWERBOUND, RAND_SECS_UPPERBOUND)
+                #print(randInterval)
+                self.__showWordWithSpaceExitPoints(targetWord=word, seconds=randInterval, textSupply=textSupply)
                 self.__points_stim.color='white'
 
                 if (len(textSupply.files_read) > 1): 
                     total_time_elapsed += 1
-            self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["end"]])
+            self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["responseStop"]])
             self.__endRoutine([self.__meme_stim])
         # self.__endRoutine(nav_bar_stims)
         
         self.__endRoutine(experiment_components)
-        self.__showTextWithSpaceExit("Points: " + str(self.__points))
+        # Flag the end of the Psychopy experiment
+        self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["psychopyStop"]])
+
         
+        pointData = (-self.__points, expInfo['participant'])
+        point_list = list()
+        mode = 'a' if os.path.exists(leaderboard_path) else 'w'
+        with open(leaderboard_path, mode) as f:
+            f = f # Do nothing
+
+        with open(leaderboard_path, 'rb+') as f:
+            try : 
+                point_list = pickle.load(f)
+            except : 
+                point_list = list()
+        # print(point_list)
+        with open(leaderboard_path, 'wb') as f: 
+            point_list.append(pointData)
+            heapq.heapify(point_list)
+            pickle.dump(point_list, f, pickle.HIGHEST_PROTOCOL)
+        # print(point_list)
+        highest_scores = "Highest scores:"
+        print(highest_scores)
+        for i in range(len(point_list) if len(point_list) < 3 else 3):
+            high_score = heapq.heappop(point_list)
+            score_report = high_score[1] + "\t---\t" + str(-high_score[0])
+            print(score_report)
+            highest_scores = highest_scores + "\n" + str(i+1) + ". " + score_report
+
+        self.__showTextWithSpaceExit("You have finished this part of the experiment.\nPlease notify your experimenter.\n\nPoints: " + str(self.__points) + "\n\n" + highest_scores)
+
         logging.flush()
         # make sure everything is closed down
         thisExp.abort()  # or data files will save again on exit
@@ -499,4 +537,4 @@ class FocusDistractionExperiement:
 myExperiment = FocusDistractionExperiement() 
 
 # Change this to runSession() in order to include the EEG data collection
-myExperiment.runPsychopy()
+myExperiment.runSession()

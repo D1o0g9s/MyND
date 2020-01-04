@@ -47,6 +47,9 @@ https://doi.org/10.21105/joss.01272
 ### Article Sources
 - https://sapienlabs.org/finding-an-alternative-to-connectionism/ 
 - https://iopscience.iop.org/article/10.1088/1741-2552/ab355c/meta
+- https://link.springer.com/article/10.1186/s13634-015-0251-9 
+- https://en.wikipedia.org/wiki/Digital_signal_processing 
+- https://neurofantastic.com/ 
 
 
 ### Meme Sources 

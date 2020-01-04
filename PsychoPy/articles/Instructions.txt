@@ -1,0 +1,1 @@
+Your task is to identify all words that contain the target letters. Press the space bar when you see a word with at least one of the target letters. 

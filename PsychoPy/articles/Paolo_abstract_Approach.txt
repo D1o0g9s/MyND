@@ -1,0 +1,1 @@
+We used a custom system to continuously record high definition video precisely time-aligned to clinical iEEG data. From these video recordings, movement periods were annotated via semi-automatic tracking based on dense optical flow.

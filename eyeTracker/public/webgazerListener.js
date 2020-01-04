@@ -59,7 +59,7 @@ connection.onopen = function () {
         if (eyeLocation.x > (window.innerWidth / 3) && eyeLocation.x < (2* window.innerWidth / 3) ) {
             circle.setAttribute("fill","red");
         } else {
-            circle.setAttribute("fill","blue");
+            circle.setAttribute("fill","red");
         }
 
         eyeLocation["x_norm"] = eyeLocation.x / window.innerWidth; 

@@ -8,10 +8,11 @@ class TextSupplier:
     def __init__(self): 
         articles_path = "./articles"
         all_articles = listdir(articles_path)
-        self.article_filenames = [join(articles_path, all_articles[i]) for i in range(len(all_articles))]
+        self.article_filenames = [join(articles_path, all_articles[i]) for i in range(len(all_articles)) if not all_articles[i].startswith(".")]
         self.instructions_filename = join(articles_path, "Instructions.txt")
         self.files_read = set()
         self.files_not_read = set(self.article_filenames)
+        print(self.files_not_read)
         
     def getCharacterFrequencies(self, text): 
         # Returns the character frequencies in a sorted tuple list [(freq, char), ...]
@@ -35,7 +36,7 @@ class TextSupplier:
 
     def updateText(self): 
         # updates self.text and targets with the filename's data
-        with open(self.current_article) as txt_file: 
+        with open(self.current_article, encoding="utf-8") as txt_file: 
             self.text = txt_file.read()
             self.splitText = self.text.split()
 
@@ -52,12 +53,15 @@ class TextSupplier:
             
 
     def getAnotherArticle(self): 
+        
         if(not self.files_not_read):
             return False
         if not self.files_read: 
             filename = self.instructions_filename
         else: 
             filename = random.choice(list(self.files_not_read))
+
+        print("another article:", filename)
         self.files_not_read.remove(filename)
         self.files_read.add(filename)
         self.current_article = filename

@@ -1,0 +1,1 @@
+With the large number of EEG channels acquired, it has become apparent that efficient channel selection algorithms are needed with varying importance from one application to another.

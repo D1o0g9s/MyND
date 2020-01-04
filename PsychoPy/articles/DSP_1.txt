@@ -1,0 +1,1 @@
+Signal processing tools such as time-domain analysis, power spectral estimation, and wavelet transform have been used for feature extraction and hence for channel selection in most of channel selection algorithms.

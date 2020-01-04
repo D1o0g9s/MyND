@@ -1,0 +1,1 @@
+In this paper, we survey the recent developments in the field of EEG channel selection methods along with their applications and classify these methods according to the evaluation approach.
