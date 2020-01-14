@@ -43,7 +43,16 @@ os.chdir(_thisDir)
 two_memes = False
 
 memes_path = "./pics/memes"
-leaderboard_path = "./leaderboard.csv"
+
+if run_type == RUN_TYPE_DEBUG: 
+    leaderboard_path = "./leaderboard_debug.pickle"
+if run_type == RUN_TYPE_START: 
+    leaderboard_path = "./leaderboard_start.pickle"
+if run_type == RUN_TYPE_SHORT: 
+    leaderboard_path = "./leaderboard_short.pickle"
+if run_type == RUN_TYPE_LONG: 
+    leaderboard_path = "./leaderboard_long.pickle"
+
 all_memes = os.listdir(memes_path)
 meme_filenames = [os.path.join(memes_path, all_memes[i]) for i in range(len(all_memes))]
 rd.shuffle(meme_filenames)
@@ -105,7 +114,7 @@ class FocusDistractionExperiement:
             win=self.__win, name='image',
             image=filename, mask=None,
             ori=0, units='norm', pos=image_pos, size=(0.5, 0.5),
-            color=[1,1,1], colorSpace='rgb', opacity=1,
+            color=[1,1,1], colorSpace='rgb', opacity=MEME_OPACITY,
             flipHoriz=False, flipVert=False,
             texRes=128, interpolate=True, depth=0.0)
         return self.__meme_stim
@@ -115,7 +124,7 @@ class FocusDistractionExperiement:
             win=self.__win, name='image',
             image=filename, mask=None,
             ori=0, units='norm', pos=image_pos_2, size=(0.5, 0.5),
-            color=[1,1,1], colorSpace='rgb', opacity=1,
+            color=[1,1,1], colorSpace='rgb', opacity=MEME_OPACITY,
             flipHoriz=False, flipVert=False,
             texRes=128, interpolate=True, depth=0.0)
         return self.__meme_stim2
@@ -213,6 +222,20 @@ class FocusDistractionExperiement:
             self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["targetWord"]])
         else :
             self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["notTargetWord"]])
+
+        if self.__meme_should_be_shown and (not self.__meme_being_shown) and (self.__points > 0 if POSITIVE_POINTS_MEMES_ONLY else True):
+            print("Meme shown!!!")
+            self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["memeShown"]])
+            self.__setDrawOn([self.__meme_stim])
+            if(two_memes):
+                self.__setDrawOn([self.__meme_stim2])
+            self.__meme_being_shown = True
+        elif not self.__meme_should_be_shown and self.__meme_being_shown:
+            print("Meme hidden!!!")
+            self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["memeHidden"]])
+            self.__endRoutine([self.__meme_stim])
+            self.__meme_being_shown = False
+
         correctness=False
         continueRoutine = True 
         changedToBlank = False
@@ -225,19 +248,6 @@ class FocusDistractionExperiement:
                 stim.text=""
                 self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["blank"]])
                 changedToBlank = True
-
-            if self.__meme_should_be_shown and (not self.__meme_being_shown) and (self.__points > 0 if POSITIVE_POINTS_MEMES_ONLY else True):
-                print("Meme shown!!!")
-                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["memeShown"]])
-                self.__setDrawOn([self.__meme_stim])
-                if(two_memes):
-                    self.__setDrawOn([self.__meme_stim2])
-                self.__meme_being_shown = True
-            elif not self.__meme_should_be_shown and self.__meme_being_shown:
-                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["memeHidden"]])
-                self.__endRoutine([self.__meme_stim])
-                self.__meme_being_shown = False
-
                 
             # Check if space pressed
             if ('space' in self.__kb.getKeys(['space'], waitRelease=False)) and (not responded): 
@@ -359,34 +369,36 @@ class FocusDistractionExperiement:
 
         # Show name of experiment and begin calibration
         self.__showTimedText(introductionText, 1)
+        
         self.__showTextWithSpaceExit(calibrationText)
         self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["calibrationStart"]])
 
         self.__showTextWithSpaceExit(blinkText, add_instr=False)
         self.__showTextWithSpaceExit(openEyeText, add_instr=False)
         self.__showTextWithSpaceExit(closeEyeText, add_instr=False)
-        
-        self.__showTextWithSpaceExit(lookHereText, location=(LEFT_X_COORD, 0), add_instr=False, height=0.02)
-        self.__showTextWithSpaceExit(lookHereText, location=(RIGHT_X_COORD, 0), add_instr=False, height=0.02)
-        self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False, height=0.02)
-        self.__showTextWithSpaceExit(lookHereText, location=(0, TOP_Y_COORD), add_instr=False, height=0.02)
-        self.__showTextWithSpaceExit(lookHereText, location=(0, BOTTOM_Y_COORD), add_instr=False, height=0.02)
-        self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False, height=0.02)
-        self.__showTextWithSpaceExit(lookHereText, location=(RIGHT_X_COORD, TOP_Y_COORD), add_instr=False, height=0.02)
-        self.__showTextWithSpaceExit(lookHereText, location=(RIGHT_X_COORD, BOTTOM_Y_COORD), add_instr=False, height=0.02)
-        self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False, height=0.02)
-        self.__showTextWithSpaceExit(lookHereText, location=(LEFT_X_COORD, TOP_Y_COORD), add_instr=False, height=0.02)
-        self.__showTextWithSpaceExit(lookHereText, location=(LEFT_X_COORD, BOTTOM_Y_COORD), add_instr=False, height=0.02)
-        self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False, height=0.02)
-        
-        
 
+        if(CALIBRATE_EYE) :
+            self.__showTextWithSpaceExit(lookHereText, location=(LEFT_X_COORD, 0), add_instr=False, height=0.02)
+            self.__showTextWithSpaceExit(lookHereText, location=(RIGHT_X_COORD, 0), add_instr=False, height=0.02)
+            self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False, height=0.02)
+            self.__showTextWithSpaceExit(lookHereText, location=(0, TOP_Y_COORD), add_instr=False, height=0.02)
+            self.__showTextWithSpaceExit(lookHereText, location=(0, BOTTOM_Y_COORD), add_instr=False, height=0.02)
+            self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False, height=0.02)
+            self.__showTextWithSpaceExit(lookHereText, location=(RIGHT_X_COORD, TOP_Y_COORD), add_instr=False, height=0.02)
+            self.__showTextWithSpaceExit(lookHereText, location=(RIGHT_X_COORD, BOTTOM_Y_COORD), add_instr=False, height=0.02)
+            self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False, height=0.02)
+            self.__showTextWithSpaceExit(lookHereText, location=(LEFT_X_COORD, TOP_Y_COORD), add_instr=False, height=0.02)
+            self.__showTextWithSpaceExit(lookHereText, location=(LEFT_X_COORD, BOTTOM_Y_COORD), add_instr=False, height=0.02)
+            self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False, height=0.02)
+            
+            
         self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["calibrationStop"]])
-        self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["instructionStart"]])
-        self.__showTextWithSpaceExit(instructionsText1)
-        self.__showTextWithSpaceExit(instructionsText2)
-        self.__showTextWithSpaceExit(instructionsText3)
-        self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["instructionStop"]])
+        if (SHOW_INTRO) :
+            self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["instructionStart"]])
+            self.__showTextWithSpaceExit(instructionsText1)
+            self.__showTextWithSpaceExit(instructionsText2)
+            self.__showTextWithSpaceExit(instructionsText3)
+            self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["instructionStop"]])
 
         experiment_components = []
         experiment_components.append(self.__getMemeStim(meme_filenames[self.__current_meme]))
@@ -396,7 +408,7 @@ class FocusDistractionExperiement:
         self.__startRoutine(experiment_components)
 
         # Create a text supplier
-        textSupply = ts.TextSupplier()
+        textSupply = ts.TextSupplier(articles_path)
         
         self.__setDrawOn([self.__points_stim])
         while (len(textSupply.files_read) < NUM_TO_READ) and (not textSupply.getAnotherArticle()): 
@@ -426,35 +438,62 @@ class FocusDistractionExperiement:
             self.__routineTimer.reset()
             self.__kb.clock.reset() 
             total_time_elapsed = 0
+            time_shown = 0
+            time_hidden = 0
             self.__meme_being_shown = False
             self.__meme_should_be_shown = False
             self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["responseStart"]])
-
+            secs_to_show = NUM_SECONDS_SHOW_MEME
+            secs_to_hide = 0
 
             while textSupply.hasNext():
                 word = textSupply.getNext()
 
-                # Starting with the second article, add change meme every 5 seconds 
-                if len(textSupply.files_read) > NUM_ARTICLES_WITHOUT_MEMES and total_time_elapsed > 5: 
-                    if total_time_elapsed % 6 == 0: 
-                        self.__current_meme = ( self.__current_meme + 1 ) % len(meme_filenames)
-                        self.__meme_stim.setImage(meme_filenames[self.__current_meme])
-                        
-                        if (two_memes) :
-                            self.__meme_stim2.setImage(meme_filenames2[self.__current_meme])
+                # Show a different meme every NUM_SECONDS_PER_MEME
+                if len(textSupply.files_read) > NUM_ARTICLES_WITHOUT_MEMES and total_time_elapsed > NUM_SECONDS_BEFORE_MEME: 
+                    if self.__meme_should_be_shown : 
+                        time_shown += 1
+                        # If shown for long enough, hide + change meme
+                        if time_shown > secs_to_show: 
+                            self.__meme_should_be_shown = not self.__meme_should_be_shown
 
-                        self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["newMeme"]])
-                        self.__marker_outlet.push_sample([meme_filenames[self.__current_meme]])
-                    if total_time_elapsed % 3 == 0 :
-                        self.__meme_should_be_shown = not self.__meme_should_be_shown
+                            self.__current_meme = ( self.__current_meme + 1 ) % len(meme_filenames)
+                            self.__meme_stim.setImage(meme_filenames[self.__current_meme])
+                            
+                            if (two_memes) :
+                                self.__meme_stim2.setImage(meme_filenames2[self.__current_meme])
+                            print("2. new meme:", self.__current_meme)
+                            self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["newMeme"]])
+                            self.__marker_outlet.push_sample([meme_filenames[self.__current_meme]])
+
+                            time_shown = 0 
+
+                    else : 
+                        time_hidden += 1 
+                        # If hidden for long enough, show meme
+                        if time_hidden > secs_to_hide: 
+                            if secs_to_hide == 0: # First meme to show for this article
+                                # Get next meme
+                                self.__current_meme = ( self.__current_meme + 1 ) % len(meme_filenames)
+                                self.__meme_stim.setImage(meme_filenames[self.__current_meme])
+                                
+                                if (two_memes) :
+                                    self.__meme_stim2.setImage(meme_filenames2[self.__current_meme])
+                                print("1. new meme:", self.__current_meme)
+                                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["newMeme"]])
+                                self.__marker_outlet.push_sample([meme_filenames[self.__current_meme]])
+
+                            self.__meme_should_be_shown = not self.__meme_should_be_shown
+                            secs_to_hide += NUM_SECONDS_HIDE_MEME_INCREMENT
+                            time_hidden = 0
                 
                 randInterval = rd.uniform(RAND_SECS_LOWERBOUND, RAND_SECS_UPPERBOUND)
                 #print(randInterval)
                 self.__showWordWithSpaceExitPoints(targetWord=word, seconds=randInterval, textSupply=textSupply)
                 self.__points_stim.color='white'
 
-                if (len(textSupply.files_read) > 1): 
-                    total_time_elapsed += 1
+                print("time elapsed:", total_time_elapsed)
+                total_time_elapsed += 1
             self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["responseStop"]])
             self.__endRoutine([self.__meme_stim])
         # self.__endRoutine(nav_bar_stims)
@@ -536,5 +575,8 @@ class FocusDistractionExperiement:
     
 myExperiment = FocusDistractionExperiement() 
 
-# Change this to runSession() in order to include the EEG data collection
-myExperiment.runSession()
+# Change this to runPsychopy() for only markers and runSession() in order to include the EEG data collection
+if run_type < 1 :
+    myExperiment.runPsychopy()
+else :
+    myExperiment.runSession()

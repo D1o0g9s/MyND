@@ -5,8 +5,7 @@ import random
 
 MAX_TO_MEMORIZE = 3
 class TextSupplier: 
-    def __init__(self): 
-        articles_path = "./articles"
+    def __init__(self, articles_path): 
         all_articles = listdir(articles_path)
         self.article_filenames = [join(articles_path, all_articles[i]) for i in range(len(all_articles)) if not all_articles[i].startswith(".")]
         self.instructions_filename = join(articles_path, "Instructions.txt")

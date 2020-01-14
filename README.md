@@ -24,11 +24,16 @@ EEG, EyeTracker, and PsychoPy Marker streams --> XDF
 3) OpenBCI Cyton Board V3 https://github.com/OpenBCI/pyOpenBCI 
 
 ## Project Versions
-
+- V1.0.0 : Updated distractor, added memorization aid, and implemented 3 experiment sections. Implemented proper marker information.
 - V0.1.2 : Includes Psychopy, Calibration, OpenBCI, and EyeTracker
 - V0.1.1 : Includes Psychopy, OpenBCI, and EyeTracker
 - V0.1.0 : Includes Psychopy and OpenBCI
 - V0.0.1 : NeuroSky, NeuroSky data analysis
+
+## Data Analysis
+- 00 notebook: Data Check
+- 01 notebook: Marker epoching
+- 02 notebook: Data filtering, cleaning, and analysis
 
 ## References
 
@@ -44,13 +49,15 @@ https://doi.org/10.21105/joss.01272
 ### de Sa Lab: Ollie's Seg Speller Offline Processing
 - https://github.com/ollie-d/SegSpeller/blob/master/Offline%20Processing.ipynb 
 
+### artifact rejection with ICA
+- https://sccn.ucsd.edu/~jung/Site/EEG_artifact_removal.html 
+
 ### Article Sources
 - https://sapienlabs.org/finding-an-alternative-to-connectionism/ 
 - https://iopscience.iop.org/article/10.1088/1741-2552/ab355c/meta
 - https://link.springer.com/article/10.1186/s13634-015-0251-9 
 - https://en.wikipedia.org/wiki/Digital_signal_processing 
 - https://neurofantastic.com/ 
-
 
 ### Meme Sources 
 - https://cleanmemes.com/ 

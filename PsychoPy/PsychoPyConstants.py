@@ -1,11 +1,35 @@
 # Settings 
 
-# Number of articles to read. 
-NUM_TO_READ = 5
-# Number of articles to show without meme distrctions
-NUM_ARTICLES_WITHOUT_MEMES = 2
-POSITIVE_POINTS_MEMES_ONLY = True
+RUN_TYPE_DEBUG = 0
+RUN_TYPE_START = 1
+RUN_TYPE_SHORT = 2
+RUN_TYPE_LONG = 3
 
+run_type = RUN_TYPE_DEBUG
+
+
+# Number of articles to read. 
+NUM_TO_READ = 2 if run_type < 2 else 5
+# Number of articles to show without meme distrctions
+NUM_ARTICLES_WITHOUT_MEMES = 0 if run_type < 2 else 3
+NUM_SECONDS_BEFORE_MEME = 2 if run_type < 2 else 5
+NUM_SECONDS_SHOW_MEME = 2
+NUM_SECONDS_HIDE_MEME_INCREMENT = 5
+POSITIVE_POINTS_MEMES_ONLY = False if run_type < 2 else True
+CALIBRATE_EYE = False
+SHOW_INTRO = True if run_type == RUN_TYPE_START else False
+
+# Articles paths
+START_ARTICLES_PATH = "./articles start"
+SHORT_ARTICLES_PATH = "./articles short"
+LONG_ARTICLES_PATH = "./articles long"
+
+if run_type == RUN_TYPE_SHORT: 
+    articles_path = SHORT_ARTICLES_PATH
+elif run_type == RUN_TYPE_LONG: 
+    articles_path = LONG_ARTICLES_PATH
+else :
+    articles_path = START_ARTICLES_PATH
 
 # Strings
 introductionText = "MyND: MyNeuroDetector"
@@ -35,7 +59,8 @@ instructionsText3 = "Extra Tips: \n\n"+\
 
 
 # PsychoPy Positioning
-image_pos = (0.65, 0)
+MEME_OPACITY = 0.3
+image_pos = (0, 0)
 image_pos_2 = (-0.75, 0)
 word_pos = (-0.4, 0)
 points_pos = (0, 0.3)
