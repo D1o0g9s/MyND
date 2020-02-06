@@ -10,24 +10,26 @@ from psychopy.hardware import keyboard
 from psychopy import locale_setup, sound, gui, visual, core, data, event, logging, clock
 from psychopy.constants import (NOT_STARTED, STARTED, PLAYING, PAUSED,
                                 STOPPED, FINISHED, PRESSED, RELEASED, FOREVER)
-import random as rd
 
-# numpy imports
-import numpy as np  # whole numpy lib is available, prepend 'np.'
-from numpy import (sin, cos, tan, log, log10, pi, average,
-                   sqrt, std, deg2rad, rad2deg, linspace, asarray)
-from numpy.random import random, randint, normal, shuffle
-from enum import Enum
+import random as rd # shuffle etc
 
+# import numpy as np # numpy imports for eeg
 import os  # handy system and path functions
 import sys  # to get file system encoding
-from pylsl import StreamInfo, StreamOutlet
-import threading
-from pyOpenBCI import OpenBCICyton
-import pickle
-import heapq
+import csv # To save experiment info into csv
+
+# import pickle
+# import heapq
 import textsupply as ts
+import leaderboard as lb
 from PsychoPyConstants import *
+
+# For LSL marker stream
+from pylsl import StreamInfo, StreamOutlet
+
+## These will be migrated to the PsychoPy file
+import threading # possibly won't need this. 
+from pyOpenBCI import OpenBCICyton
 
 
 sys.path.append('../')
@@ -44,22 +46,13 @@ two_memes = False
 
 memes_path = "./pics/memes"
 
-if run_type == RUN_TYPE_DEBUG: 
-    leaderboard_path = "./leaderboard_debug.pickle"
-if run_type == RUN_TYPE_START: 
-    leaderboard_path = "./leaderboard_start.pickle"
-if run_type == RUN_TYPE_SHORT: 
-    leaderboard_path = "./leaderboard_short.pickle"
-if run_type == RUN_TYPE_LONG: 
-    leaderboard_path = "./leaderboard_long.pickle"
-
 all_memes = os.listdir(memes_path)
 meme_filenames = [os.path.join(memes_path, all_memes[i]) for i in range(len(all_memes))]
 rd.shuffle(meme_filenames)
 
-if (two_memes):
-    meme_filenames2 = list(meme_filenames)
-    rd.shuffle(meme_filenames2)
+meme_filenames2 = list(meme_filenames)
+rd.shuffle(meme_filenames2)
+
 
 class FocusDistractionExperiement: 
     
@@ -71,11 +64,13 @@ class FocusDistractionExperiement:
         self.__meme_stim = None
         self.__points_stim = None
         self.__letters_stim = None
+        self.__last_points_list = list()
+        self.__performance = 0 # num correct out of the last MAX_PREV_TO_INCLUDE. This is subtracted from the upperbound to get the duration for the next word
 
-        self.__board = None
+        #  self.__board = None
+        #  self.__outlet_eeg = None
+        #  self.__outlet_aux = None
         self.__marker_outlet = None
-        self.__outlet_eeg = None
-        self.__outlet_aux = None
 
         self.__current_meme = 0
         self.__points = 0
@@ -123,7 +118,7 @@ class FocusDistractionExperiement:
         self.__meme_stim2 = visual.ImageStim(
             win=self.__win, name='image',
             image=filename, mask=None,
-            ori=0, units='norm', pos=image_pos_2, size=(0.5, 0.5),
+            ori=0, units='norm', pos=image_pos, size=(0.5, 0.5),
             color=[1,1,1], colorSpace='rgb', opacity=MEME_OPACITY,
             flipHoriz=False, flipVert=False,
             texRes=128, interpolate=True, depth=0.0)
@@ -169,7 +164,7 @@ class FocusDistractionExperiement:
 
             # Check for ESC quit 
             if self.__endExpNow or 'escape' in self.__kb.getKeys(['escape'], waitRelease=True):
-                self.__board.stop_stream()
+                # self.__board.stop_stream()
                 core.quit()
                 sys.exit()
             
@@ -195,7 +190,7 @@ class FocusDistractionExperiement:
 
             # Check for ESC quit
             if self.__endExpNow or 'escape' in self.__kb.getKeys(['escape'], waitRelease=True):
-                self.__board.stop_stream()
+                # self.__board.stop_stream()
                 core.quit()
                 sys.exit()
 
@@ -224,14 +219,14 @@ class FocusDistractionExperiement:
             self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["notTargetWord"]])
 
         if self.__meme_should_be_shown and (not self.__meme_being_shown) and (self.__points > 0 if POSITIVE_POINTS_MEMES_ONLY else True):
-            print("Meme shown!!!")
+            # print("Meme shown!!!")
             self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["memeShown"]])
             self.__setDrawOn([self.__meme_stim])
-            if(two_memes):
-                self.__setDrawOn([self.__meme_stim2])
+            # if(two_memes):
+            #     self.__setDrawOn([self.__meme_stim2])
             self.__meme_being_shown = True
         elif not self.__meme_should_be_shown and self.__meme_being_shown:
-            print("Meme hidden!!!")
+            # print("Meme hidden!!!")
             self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["memeHidden"]])
             self.__endRoutine([self.__meme_stim])
             self.__meme_being_shown = False
@@ -255,14 +250,16 @@ class FocusDistractionExperiement:
                 responded=True
                 if textSupply.checkInSet(targetWord) :
                     self.__points += 1
+                    self.__last_points_list.append(1)
                     correctness=True
                     self.__points_stim.text="Points: " + str(self.__points)
-                    stim.color='green'
+                    # stim.color='green'
                 else :
                     self.__points -= 1
+                    self.__last_points_list.append(-1)
                     correctness=False
                     self.__points_stim.text="Points: " + str(self.__points)
-                    stim.color='red'
+                    # stim.color='red'
 
             # Check if m pressed
             if ('m' in self.__kb.getKeys(['m'], waitRelease=False)): 
@@ -273,7 +270,7 @@ class FocusDistractionExperiement:
             
             # Check for ESC quit
             if self.__endExpNow or 'escape' in self.__kb.getKeys(['escape'], waitRelease=True):
-                self.__board.stop_stream()
+                # self.__board.stop_stream()
                 core.quit()
                 sys.exit()
 
@@ -285,10 +282,17 @@ class FocusDistractionExperiement:
             self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["spaceNotPressed"]])
             if textSupply.checkInSet(targetWord):
                 correctness=False
+                self.__last_points_list.append(-1)
                 self.__points -= 1
                 self.__points_stim.text="Points: " + str(self.__points)
             else :
+                self.__last_points_list.append(0)
                 correctness=True
+
+        if len(self.__last_points_list) >= MAX_PREV_TO_INCLUDE:
+            self.__last_points_list.pop(0)
+            self.__performance = sum(self.__last_points_list) / MAX_PREV_TO_INCLUDE
+
         if correctness: 
             self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["correct"]])
         else :
@@ -310,10 +314,19 @@ class FocusDistractionExperiement:
         expInfo['date'] = data.getDateStr()  # add a simple timestamp
         expInfo['expName'] = expName
         expInfo['psychopyVersion'] = psychopyVersion
+        expInfo['runType'] = run_type
+        expInfo['numArticles'] = NUM_TO_READ
+        expInfo['numArticlesWithoutMemes'] = NUM_ARTICLES_WITHOUT_MEMES
 
         # Data file name stem = absolute path + name; later add .psyexp, .csv, .log, etc
         filename = _thisDir + os.sep + u'data/%s_%s_%s_%s' % (expInfo['participant'], expInfo['session'], expName, expInfo['date'])
         
+        # Save the experiment meta data to a csv file
+        with open(filename+'.csv', 'w') as f:  # Just use 'w' mode in 3.x
+            w = csv.writer(f)
+            w.writerow(expInfo.keys())
+            w.writerow(expInfo.values())
+
         # An ExperimentHandler isn't essential but helps with data saving
         thisExp = data.ExperimentHandler(name=expName, version='',
             extraInfo=expInfo, runtimeInfo=None,
@@ -353,7 +366,7 @@ class FocusDistractionExperiement:
         filename, thisExp, expInfo = self.__getDatafilenameAndSetupWindow()
 
         # save a log file for detail verbose info
-        logFile = logging.LogFile(filename+'.log', level=logging.EXP)
+        # logFile = logging.LogFile(filename+'.log', level=logging.EXP)
         logging.console.setLevel(logging.WARNING)  # this outputs to the screen, not a file
 
         ### ESC flag ###
@@ -364,8 +377,17 @@ class FocusDistractionExperiement:
         self.__routineTimer = core.CountdownTimer()  # to track time remaining of each (non-slip) routine
         self.__kb = keyboard.Keyboard()
 
+        experiment_components = []
+        experiment_components.append(self.__getMemeStim(meme_filenames[self.__current_meme]))
+        random_start_meme_list_2 = rd.randint(0, len(meme_filenames2) - 1)
+        experiment_components.append(self.__getMemeStim2(meme_filenames2[random_start_meme_list_2]))
+        experiment_components.append(self.__getPointsStim())
+        self.__startRoutine(experiment_components)
+
+
         # Flag the start of the Psychopy experiment
         self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["psychopyStart"]])
+
 
         # Show name of experiment and begin calibration
         self.__showTimedText(introductionText, 1)
@@ -376,8 +398,18 @@ class FocusDistractionExperiement:
         self.__showTextWithSpaceExit(blinkText, add_instr=False)
         self.__showTextWithSpaceExit(openEyeText, add_instr=False)
         self.__showTextWithSpaceExit(closeEyeText, add_instr=False)
+        self.__showTextWithSpaceExit(relaxText, add_instr=False)
+        self.__showTextWithSpaceExit("Enjoy These Memes (press space to advance through each)", add_instr=False)
+        for i in range(5) :
+            self.__setDrawOn([self.__meme_stim2])
+            self.__showTextWithSpaceExit("", add_instr=False)
+            self.__endRoutine([self.__meme_stim2])
+            random_start_meme_list_2 = ( random_start_meme_list_2 + 1 ) % len(meme_filenames)
+            self.__meme_stim2.setImage(meme_filenames2[random_start_meme_list_2])
+
 
         if(CALIBRATE_EYE) :
+            self.__showTextWithSpaceExit(calibrationText)
             self.__showTextWithSpaceExit(lookHereText, location=(LEFT_X_COORD, 0), add_instr=False, height=0.02)
             self.__showTextWithSpaceExit(lookHereText, location=(RIGHT_X_COORD, 0), add_instr=False, height=0.02)
             self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False, height=0.02)
@@ -390,8 +422,8 @@ class FocusDistractionExperiement:
             self.__showTextWithSpaceExit(lookHereText, location=(LEFT_X_COORD, TOP_Y_COORD), add_instr=False, height=0.02)
             self.__showTextWithSpaceExit(lookHereText, location=(LEFT_X_COORD, BOTTOM_Y_COORD), add_instr=False, height=0.02)
             self.__showTextWithSpaceExit(lookHereText, location=(0, 0), add_instr=False, height=0.02)
-            
-            
+            ## CAUTION: data analysis uses the -3rd "(0, 0)" to calibrate for center looking eyes. 
+        
         self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["calibrationStop"]])
         if (SHOW_INTRO) :
             self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["instructionStart"]])
@@ -400,12 +432,12 @@ class FocusDistractionExperiement:
             self.__showTextWithSpaceExit(instructionsText3)
             self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["instructionStop"]])
 
-        experiment_components = []
-        experiment_components.append(self.__getMemeStim(meme_filenames[self.__current_meme]))
-        if (two_memes) :
-            experiment_components.append(self.__getMemeStim2(meme_filenames2[self.__current_meme]))
-        experiment_components.append(self.__getPointsStim())
-        self.__startRoutine(experiment_components)
+        # experiment_components = []
+        # experiment_components.append(self.__getMemeStim(meme_filenames[self.__current_meme]))
+        # if (two_memes) :
+        #     experiment_components.append(self.__getMemeStim2(meme_filenames2[self.__current_meme]))
+        # experiment_components.append(self.__getPointsStim())
+        # self.__startRoutine(experiment_components)
 
         # Create a text supplier
         textSupply = ts.TextSupplier(articles_path)
@@ -451,48 +483,50 @@ class FocusDistractionExperiement:
 
                 # Show a different meme every NUM_SECONDS_PER_MEME
                 if len(textSupply.files_read) > NUM_ARTICLES_WITHOUT_MEMES and total_time_elapsed > NUM_SECONDS_BEFORE_MEME: 
+                    self.__meme_should_be_shown = True
                     if self.__meme_should_be_shown : 
                         time_shown += 1
                         # If shown for long enough, hide + change meme
                         if time_shown > secs_to_show: 
-                            self.__meme_should_be_shown = not self.__meme_should_be_shown
+
+                            #self.__meme_should_be_shown = not self.__meme_should_be_shown
 
                             self.__current_meme = ( self.__current_meme + 1 ) % len(meme_filenames)
                             self.__meme_stim.setImage(meme_filenames[self.__current_meme])
                             
-                            if (two_memes) :
-                                self.__meme_stim2.setImage(meme_filenames2[self.__current_meme])
-                            print("2. new meme:", self.__current_meme)
+                            # if (two_memes) :
+                            #     self.__meme_stim2.setImage(meme_filenames2[self.__current_meme])
+                            #  print("2. new meme:", self.__current_meme)
                             self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["newMeme"]])
                             self.__marker_outlet.push_sample([meme_filenames[self.__current_meme]])
 
                             time_shown = 0 
 
-                    else : 
-                        time_hidden += 1 
-                        # If hidden for long enough, show meme
-                        if time_hidden > secs_to_hide: 
-                            if secs_to_hide == 0: # First meme to show for this article
-                                # Get next meme
-                                self.__current_meme = ( self.__current_meme + 1 ) % len(meme_filenames)
-                                self.__meme_stim.setImage(meme_filenames[self.__current_meme])
-                                
-                                if (two_memes) :
-                                    self.__meme_stim2.setImage(meme_filenames2[self.__current_meme])
-                                print("1. new meme:", self.__current_meme)
-                                self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["newMeme"]])
-                                self.__marker_outlet.push_sample([meme_filenames[self.__current_meme]])
-
-                            self.__meme_should_be_shown = not self.__meme_should_be_shown
-                            secs_to_hide += NUM_SECONDS_HIDE_MEME_INCREMENT
-                            time_hidden = 0
+                    # else : 
+                    #     time_hidden += 1 
+                    #     # If hidden for long enough, show meme
+                    #     if time_hidden > secs_to_hide: 
+                    #         #if secs_to_hide == 0: # First meme to show for this article
+                    #         # Get next meme
+                    #         self.__current_meme = ( self.__current_meme + 1 ) % len(meme_filenames)
+                    #         self.__meme_stim.setImage(meme_filenames[self.__current_meme])
+                            
+                    #         if (two_memes) :
+                    #             self.__meme_stim2.setImage(meme_filenames2[self.__current_meme])
+                    #         #  print("1. new meme:", self.__current_meme)
+                    #         self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["newMeme"]])
+                    #         self.__marker_outlet.push_sample([meme_filenames[self.__current_meme]])
+                    #         #secs_to_hide += NUM_SECONDS_HIDE_MEME_INCREMENT
+                    #         self.__meme_should_be_shown = not self.__meme_should_be_shown                                
+                    #         time_hidden = 0
                 
-                randInterval = rd.uniform(RAND_SECS_LOWERBOUND, RAND_SECS_UPPERBOUND)
-                #print(randInterval)
-                self.__showWordWithSpaceExitPoints(targetWord=word, seconds=randInterval, textSupply=textSupply)
-                self.__points_stim.color='white'
+                num_secs = int((RAND_SECS_STARTBOUND - self.__performance) * 10) / 10 #rd.uniform(RAND_SECS_LOWERBOUND, RAND_SECS_UPPERBOUND)
+                num_secs = RAND_SECS_LOWERBOUND if num_secs < RAND_SECS_LOWERBOUND else num_secs
+                # print(num_secs)
+                self.__showWordWithSpaceExitPoints(targetWord=word, seconds=num_secs, textSupply=textSupply)
+                # self.__points_stim.color='white'
 
-                print("time elapsed:", total_time_elapsed)
+                # print("time elapsed:", total_time_elapsed)
                 total_time_elapsed += 1
             self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["responseStop"]])
             self.__endRoutine([self.__meme_stim])
@@ -502,81 +536,59 @@ class FocusDistractionExperiement:
         # Flag the end of the Psychopy experiment
         self.__marker_outlet.push_sample([PSYCHO_PY_MARKERS["psychopyStop"]])
 
-        
-        pointData = (-self.__points, expInfo['participant'])
-        point_list = list()
-        mode = 'a' if os.path.exists(leaderboard_path) else 'w'
-        with open(leaderboard_path, mode) as f:
-            f = f # Do nothing
+        leaderboard = lb.Leaderboard(3) 
+        leaderboard.update(self.__points, expInfo['participant'])
+        highest_scores_text = leaderboard.getHighscoresText()
 
-        with open(leaderboard_path, 'rb+') as f:
-            try : 
-                point_list = pickle.load(f)
-            except : 
-                point_list = list()
-        # print(point_list)
-        with open(leaderboard_path, 'wb') as f: 
-            point_list.append(pointData)
-            heapq.heapify(point_list)
-            pickle.dump(point_list, f, pickle.HIGHEST_PROTOCOL)
-        # print(point_list)
-        highest_scores = "Highest scores:"
-        print(highest_scores)
-        for i in range(len(point_list) if len(point_list) < 3 else 3):
-            high_score = heapq.heappop(point_list)
-            score_report = high_score[1] + "\t---\t" + str(-high_score[0])
-            print(score_report)
-            highest_scores = highest_scores + "\n" + str(i+1) + ". " + score_report
-
-        self.__showTextWithSpaceExit("You have finished this part of the experiment.\nPlease notify your experimenter.\n\nPoints: " + str(self.__points) + "\n\n" + highest_scores)
+        self.__showTextWithSpaceExit("You have finished this part of the experiment.\nPlease notify your experimenter.\n\nPoints: " + str(self.__points) + "\n\n" + highest_scores_text)
 
         logging.flush()
         # make sure everything is closed down
         thisExp.abort()  # or data files will save again on exit
         self.__win.close()
-        #core.quit()
-    def __lsl_streamers(self, sample):
-        self.__outlet_eeg.push_sample(np.array(sample.channels_data)*SCALE_FACTOR_EEG)
-        self.__outlet_aux.push_sample(np.array(sample.aux_data)*SCALE_FACTOR_AUX)
+        #core.quit() # Don't need this for some reason
+    # def __lsl_streamers(self, sample):
+    #     self.__outlet_eeg.push_sample(np.array(sample.channels_data)*SCALE_FACTOR_EEG)
+    #     self.__outlet_aux.push_sample(np.array(sample.aux_data)*SCALE_FACTOR_AUX)
 
-    def __createEEGStream(self) : 
-        info_eeg = StreamInfo(name='OpenBCI EEG', 
-            type='EEG', channel_count=8, nominal_srate=250, 
-            channel_format='float32', source_id='eeg_thread')
-        info_aux = StreamInfo(name='OpenBCI AUX', 
-            type='AUX', channel_count=3, nominal_srate=250, 
-            channel_format='float32', source_id='aux_thread')
+    # def __createEEGStream(self) : 
+    #     info_eeg = StreamInfo(name='OpenBCI EEG', 
+    #         type='EEG', channel_count=8, nominal_srate=250, 
+    #         channel_format='float32', source_id='eeg_thread')
+    #     info_aux = StreamInfo(name='OpenBCI AUX', 
+    #         type='AUX', channel_count=3, nominal_srate=250, 
+    #         channel_format='float32', source_id='aux_thread')
 
-        self.__outlet_eeg = StreamOutlet(info_eeg)
-        self.__outlet_aux = StreamOutlet(info_aux)
-        # append some meta-data
-        # info.desc().append_child_value("manufacturer", "OpenBCI")
-        # channels = info.desc().append_child("channels")
-        # for c in ["Fp1", "Fp2", "FPz", "A1"]:
-        #     channels.append_child("channel")\
-        #         .append_child_value("name", c)\
-        #         .append_child_value("unit", "microvolts")\
-        #         .append_child_value("type", "EEG")
+    #     self.__outlet_eeg = StreamOutlet(info_eeg)
+    #     self.__outlet_aux = StreamOutlet(info_aux)
+    #     # append some meta-data
+    #     # info.desc().append_child_value("manufacturer", "OpenBCI")
+    #     # channels = info.desc().append_child("channels")
+    #     # for c in ["Fp1", "Fp2", "FPz", "A1"]:
+    #     #     channels.append_child("channel")\
+    #     #         .append_child_value("name", c)\
+    #     #         .append_child_value("unit", "microvolts")\
+    #     #         .append_child_value("type", "EEG")
 
-        # next make an outlet; we set the transmission chunk size to 32 samples and
-        # the outgoing buffer size to 360 seconds (max.)
-        # outlet = StreamOutlet(info, 32, 360)
+    #     # next make an outlet; we set the transmission chunk size to 32 samples and
+    #     # the outgoing buffer size to 360 seconds (max.)
+    #     # outlet = StreamOutlet(info, 32, 360)
 
-    def runSession(self): 
-        self.__createEEGStream()
-        self.__board = OpenBCICyton()
-        eeg_thread = threading.Thread(target=self.__board.start_stream, args=(self.__lsl_streamers,))
-        eeg_thread.start()
+    # def runSession(self): 
+    #     self.__createEEGStream()
+    #     self.__board = OpenBCICyton()
+    #     eeg_thread = threading.Thread(target=self.__board.start_stream, args=(self.__lsl_streamers,))
+    #     eeg_thread.start()
 
-        self.runPsychopy()
+    #     self.runPsychopy()
 
-        self.__board.stop_stream()
-        sys.exit()
+    #     self.__board.stop_stream()
+    #     sys.exit()
     
 myExperiment = FocusDistractionExperiement() 
 
 # Change this to runPsychopy() for only markers and runSession() in order to include the EEG data collection
-if run_type < 1 :
-    myExperiment.runPsychopy()
-else :
-    myExperiment.runSession()
+# if run_type < 1 :
+myExperiment.runPsychopy()
+# else :
+    # myExperiment.runPsychopy()

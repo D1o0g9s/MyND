@@ -20,7 +20,7 @@ async def hello(websocket, path):
     while(True) :
         eyeLocation = await websocket.recv()
         eyeLocation = json.loads(eyeLocation)
-        print("x:", eyeLocation["x"], "y:",  eyeLocation["y"], "x_norm:", eyeLocation["x_norm"], "y_norm:", eyeLocation["y_norm"])
+        # print("x:", eyeLocation["x"], "y:",  eyeLocation["y"], "x_norm:", eyeLocation["x_norm"], "y_norm:", eyeLocation["y_norm"])
         eyeLocation_coord = [eyeLocation["x"], eyeLocation["y"]]
         outlet.push_sample(eyeLocation_coord)
         outlet_n.push_sample([eyeLocation["x_norm"], eyeLocation["y_norm"]])

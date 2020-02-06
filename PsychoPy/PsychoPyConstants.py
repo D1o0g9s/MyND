@@ -7,16 +7,10 @@ RUN_TYPE_LONG = 3
 
 run_type = RUN_TYPE_DEBUG
 
-
 # Number of articles to read. 
 NUM_TO_READ = 2 if run_type < 2 else 5
 # Number of articles to show without meme distrctions
 NUM_ARTICLES_WITHOUT_MEMES = 0 if run_type < 2 else 3
-NUM_SECONDS_BEFORE_MEME = 2 if run_type < 2 else 5
-NUM_SECONDS_SHOW_MEME = 2
-NUM_SECONDS_HIDE_MEME_INCREMENT = 5
-POSITIVE_POINTS_MEMES_ONLY = False if run_type < 2 else True
-CALIBRATE_EYE = False
 SHOW_INTRO = True if run_type == RUN_TYPE_START else False
 
 # Articles paths
@@ -31,6 +25,16 @@ elif run_type == RUN_TYPE_LONG:
 else :
     articles_path = START_ARTICLES_PATH
 
+
+## BELOW SHOULD BE IDENTICAL to file in DATA Analysis
+
+NUM_SECONDS_BEFORE_MEME = 0
+POSITIVE_POINTS_MEMES_ONLY = False
+CALIBRATE_EYE = True
+
+NUM_SECONDS_SHOW_MEME = 2
+NUM_SECONDS_HIDE_MEME_INCREMENT = 0
+
 # Strings
 introductionText = "MyND: MyNeuroDetector"
 
@@ -38,7 +42,9 @@ calibrationText = "Calibration stage \n\nFollow the instructions that pop up, wh
 lookHereText = "Look Here\ncount to 1\nthen Press Space"
 blinkText = "Blink twice\n\nthen Press Space"
 closeEyeText = "Close your eyes and count to 5\n\nthen Press Space"
-openEyeText = "Try not to blink and count to 5\n\nthen Press Space"
+openEyeText = "Try not to blink, look at the center of your screen, and count to 5\n\nthen Press Space"
+relaxText = "Relax for at least 5 seconds\n\nthen Press Space"
+
 
 instructionsText1 = "Task:\n\n"+\
     "Gain as many points as possible by identifying the words that contain the target letters.\n\n"+\
@@ -60,16 +66,20 @@ instructionsText3 = "Extra Tips: \n\n"+\
 
 # PsychoPy Positioning
 MEME_OPACITY = 0.3
-image_pos = (0, 0)
+image_pos = (0.3, 0)
 image_pos_2 = (-0.75, 0)
 word_pos = (-0.4, 0)
 points_pos = (0, 0.3)
 PERCENT_SHOW = 0.8 # Percentage of time the text should be shown in TimedTextWithSpaceExit
-RAND_SECS_LOWERBOUND = 1.0 # min Number of seconds to display the word for
-RAND_SECS_UPPERBOUND = 1.3 # max "
+
+RAND_SECS_LOWERBOUND = 0.9 # min Number of seconds to display the word for
+RAND_SECS_STARTBOUND = 1.2 # starting number of seconds to display word for
 
 SCALE_FACTOR_EEG = (4500000)/24/(2**23-1) #uV/count
 SCALE_FACTOR_AUX = 0.002 / (2**4)
+
+# Num prev to include in performance
+MAX_PREV_TO_INCLUDE = 10
 
 # For eye tracking calibration
 LEFT_X_COORD = -0.7
