@@ -1,9 +1,17 @@
+
+from pylsl import StreamInfo, StreamOutlet
+from pyOpenBCI import OpenBCICyton
+import numpy as np
+from PsychoPyConstants import SCALE_FACTOR_EEG, SCALE_FACTOR_AUX
+
+
 class EEGRecorder :
 
     def __init__(self): 
         self.__board = None
         self.__outlet_eeg = None
         self.__outlet_aux = None
+        self.__createEEGStream()
 
     def __createEEGStream(self) : 
         info_eeg = StreamInfo(name='OpenBCI EEG', 
@@ -27,3 +35,21 @@ class EEGRecorder :
         # next make an outlet; we set the transmission chunk size to 32 samples and
         # the outgoing buffer size to 360 seconds (max.)
         # outlet = StreamOutlet(info, 32, 360)
+
+    def __lsl_streamers(self, sample):
+        self.__outlet_eeg.push_sample(np.array(sample.channels_data)*SCALE_FACTOR_EEG)
+        self.__outlet_aux.push_sample(np.array(sample.aux_data)*SCALE_FACTOR_AUX)
+
+    def runSession(self): 
+        self.__createEEGStream()
+        self.__board = OpenBCICyton()
+        self.__board.start_stream(self.__lsl_streamers)
+
+        # eeg_thread = threading.Thread(target=self.__board.start_stream, args=(self.__lsl_streamers,))
+        # eeg_thread.start()
+
+        self.__board.stop_stream()
+        sys.exit()
+
+er = EEGRecorder()
+er.runSession()

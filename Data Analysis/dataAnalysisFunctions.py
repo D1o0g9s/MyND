@@ -2,6 +2,7 @@ import copy # For copying and filtering the StreamData struct
 import pyeeg
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 from constants import * 
 from helperFunctions import * 
@@ -243,3 +244,39 @@ def getWindowsList(df, **kwargs) :
             windows.extend(getWindows(data[StreamType.EEG.value][StreamType.DATA.value][:, channels['right_eeg']], **kwargs))
             windows.extend(getWindows(data[StreamType.EEG.value][StreamType.DATA.value][:, channels['left_eeg']], **kwargs))
     return np.array(windows)
+
+sets = {'verbose':False}
+def getFOOOFFits(eeg_list, eeg_fs=250, freq_range=(2, 20)):
+    fits = list()
+    for eeg in eeg_list:
+        freqs, psd = spectral.compute_spectrum(eeg, eeg_fs, method='welch', avg_type='median', nperseg=eeg_fs)
+        f = FOOOF(**sets) 
+        f.fit(freqs, psd, freq_range)
+        fits.append(f)
+    return fits
+
+def getPeakParams(fooof_fits):
+    return [f.peak_params_ for f in fooof_fits]
+
+def getCF(peak_data):
+    if peak_data is None:
+        return 0
+    return peak_data[0]
+
+def getAmp(peak_data):
+    if peak_data is None:
+        return 0 
+    return peak_data[1]
+
+def getBW(peak_data):
+    if peak_data is None:
+        return 0 
+    return peak_data[2]
+
+def getCFs(peak_params_list):
+    return [getCF(p) for pp in peak_params_list for p in pp]
+def getAmps(peak_params_list):
+    return [getAmp(p) for pp in peak_params_list for p in pp]
+def getBWs(peak_params_list):
+    return [getBW(p) for pp in peak_params_list for p in pp]
+

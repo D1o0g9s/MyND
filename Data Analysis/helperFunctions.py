@@ -29,6 +29,7 @@ def loadxdf(fname, synthetic = False):
                 stream_data[stream_type][StreamType.FS.value] = stream['info']['nominal_srate'][0]
         
     return stream_data
+    
 
 def getEEGfs(original_data):
     if StreamType.EEG.value in original_data : 
@@ -44,16 +45,34 @@ def getEYEfs(original_data):
     else :
         return -1
 
+def ensureDirExists(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+        
+def writeToPickle(data, output_path):
+    mode = 'a' if os.path.exists(output_path) else 'w'
+    # Create file if does not exist
+    with open(output_path, mode) as f:
+        f = f # Do nothing
+    
+    # Write data to output
+    with open(output_path, 'wb') as f: 
+        pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
+
+def loadPickle(path):
+    with open(path, 'rb+') as f:
+        data = pickle.load(f)
+    return data
+
 # Returns a new data structure that starts at start_timestamp and ends at end_timestamp (inclusive)
 def epochByTime(start_timestamp, end_timestamp, data): 
     new_data = {}
     for stream_type in data: 
-        new_data[stream_type] = {}
         time_series = data[stream_type][StreamType.TIME.value]
         data_series = data[stream_type][StreamType.DATA.value]
         
         indexes = np.intersect1d(np.where(time_series >= start_timestamp), np.where(time_series <= end_timestamp)) 
-        #print(stream_type, indexes)
+        new_data[stream_type] = {}
         new_data[stream_type][StreamType.TIME.value] = time_series[indexes]
         new_data[stream_type][StreamType.DATA.value] = data_series[indexes]
     
@@ -324,3 +343,141 @@ def getLookingRightTimes(original_data, avg_calibrated_x, avg_calibrated_y, perc
 
     return looking_right
 
+
+def getLookingUpTimes(original_data, avg_calibrated_x, avg_calibrated_y, percent_distance_to_edge=(4/10)) :
+    y_threshold_center_up = avg_calibrated_y['center'] - ((avg_calibrated_y['center'] - avg_calibrated_y['up'])* (percent_distance_to_edge))
+    eye_y_data=original_data[StreamType.EYENORM.value][StreamType.DATA.value][:,1]
+    looking_up = [1 if val < y_threshold_center_up else 0 for i, val in enumerate(eye_y_data)]
+    return looking_up
+
+def getTrials(data):
+    data_list, a, t_data = getLabelBoundSingleLabelData("newWord", "endWord", data, go_backward=False)
+    return data_list
+
+def getReactionTime(data) :
+    markers = data[StreamType.MARKER.value][StreamType.DATA.value]
+    times = data[StreamType.MARKER.value][StreamType.TIME.value]
+    if (PSYCHO_PY_MARKERS["spacePressed"] in markers) and (PSYCHO_PY_MARKERS["spacePressed"] in markers): 
+        
+        index_space = np.where(data[StreamType.MARKER.value][StreamType.DATA.value] == PSYCHO_PY_MARKERS["spacePressed"])[0]
+        index_start = np.where(data[StreamType.MARKER.value][StreamType.DATA.value] == PSYCHO_PY_MARKERS["newWord"])[0]
+        
+        return (times[index_space] - times[index_start])[0]
+    else:
+        return 0
+
+def getEEGFromDataFrame_AvgLeftRight(df):
+    eeg_list = list()
+    for i, row in df.iterrows():
+        data = row["data"]
+        left_eeg = data[StreamType.EEG.value][StreamType.DATA.value][:,channels['left_eeg']]
+        right_eeg = data[StreamType.EEG.value][StreamType.DATA.value][:,channels['right_eeg']]
+        avg_eeg = np.mean([left_eeg, right_eeg], axis=0)
+        eeg_list.append(avg_eeg)
+    return eeg_list
+
+def getEEGFromDataList_AvgLeftRight(data_list):
+    eeg_list = list() 
+    for data in data_list: 
+        left_eeg = data[StreamType.EEG.value][StreamType.DATA.value][:,channels['left_eeg']]
+        right_eeg = data[StreamType.EEG.value][StreamType.DATA.value][:,channels['right_eeg']]
+        avg_eeg = np.mean([left_eeg, right_eeg], axis=0)
+        eeg_list.append(avg_eeg)
+    return eeg_list
+
+def tidyEEGList(eeg_list, verbose=False):
+    minimum_length = min(map(len, eeg_list))
+    cleaned_eeg_list = eeg_list.copy()
+    if minimum_length < 2: 
+        toRemove = [i for i in range(len(eeg_list)) if len(eeg_list[i]) < 1]
+        for i in toRemove:
+            cleaned_eeg_list.pop(i)
+        if verbose: 
+            print("removed from eeg_list:", [i for i in range(len(eeg_list)) if len(eeg_list[i]) < 1])
+    minimum_length = min(map(len, cleaned_eeg_list))
+    if verbose: 
+        print("min length:", minimum_length)
+    new_list = [cleaned_eeg_list[i][:minimum_length] for i in range(len(cleaned_eeg_list))]
+    return new_list
+
+def getAmpByTimeLeftRight(data_frame, eeg_fs, band, data_type="data", cutoff_timepoints=250) :
+    amp_rights = list()
+    amp_lefts = list() 
+
+    for i, row in data_frame.iterrows(): 
+        eeg_data = row[data_type][StreamType.EEG.value][StreamType.DATA.value]
+        if len(eeg_data) > 0: 
+            sig_right = eeg_data[:, channels["right_eeg"]][:cutoff_timepoints]
+            amp_right = amp_by_time(sig_right, eeg_fs, band)
+            amp_rights.append(amp_right[~np.isnan(amp_right)])
+
+            sig_left = eeg_data[:, channels["left_eeg"]][:cutoff_timepoints]
+            amp_left = amp_by_time(sig_left, eeg_fs, band)
+            amp_lefts.append(amp_left[~np.isnan(amp_left)])
+        
+    return amp_lefts, amp_rights
+
+def getSmoothedPerformance(original_performance, num_ahead=1, num_behind=1):
+    # Takes into account the performance before and ahead of it to determine each trial's performance 
+    # num_ahead: the number of elements to check ahead of this element
+    # num_behind: the number of elements to check behind this element
+    to_return = list()
+    for i in range(len(original_performance)):
+        value = False
+        for j in range(1, num_ahead+1):
+            if i >= j: 
+                if original_performance[i-j]: 
+                    value = True
+                    break
+        for j in range(1, num_behind+1):
+            if i < len(original_performance) - j:
+                if original_performance[i+j]: 
+                    value = True
+                    break
+        if original_performance[i]:
+            to_return.append(True)
+        else : 
+            to_return.append(value)
+    return to_return
+
+def compareDFs(dfs, names, band=alpha, eeg_fs=250, data_type="data", cutoff_timepoints=250):
+    counter=0
+    for df in dfs:  
+        print(names[counter]+" len:" ,  len(df))
+        counter+=1
+    
+    amp_lefts=list()
+    amp_rights=list()
+    amp_avg=list()
+    amp_diff=list()
+    sem_avgs = list()
+    sem_diffs = list()
+    
+    for df in dfs: 
+        amp_lefts1, amp_rights1 = getAmpByTimeLeftRight(df, eeg_fs=eeg_fs, band=band, data_type=data_type, cutoff_timepoints=cutoff_timepoints)
+        amp_lefts.append(amp_lefts1)
+        amp_rights.append(amp_rights1)
+        
+        avg_list_sub = list()
+        diff_list_sub = list()
+        for i in range(len(amp_lefts1)) :
+            avg_list_sub.append(np.mean([amp_lefts1[i], amp_rights1[i]], axis=0))
+            diff_list_sub.append(amp_lefts1[i] - amp_rights1[i])
+        amp_avg.append(avg_list_sub)
+        amp_diff.append(diff_list_sub)
+        
+        sem_avgs.append(sp.stats.sem(avg_list_sub,axis=0))
+        sem_diffs.append(sp.stats.sem(diff_list_sub,axis=0))
+        
+    
+    # Average amp by time Alpha
+    for i in range(len(amp_avg)) : 
+        av = np.nanmean(amp_avg[i], axis=0)
+        plt.plot(av, label=names[i])
+        plt.fill_between(list(range(len(av))), av-sem_avgs[i], av+sem_avgs[i], alpha = 0.2)
+
+    plt.title("Average amp by time")
+    plt.ylabel("power of band")
+    plt.xlabel("timepoints from start of word")
+    plt.legend()
+    plt.show()

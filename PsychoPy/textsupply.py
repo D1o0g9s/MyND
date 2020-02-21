@@ -3,7 +3,7 @@ from os import listdir
 from os.path import join
 import random
 
-MAX_TO_MEMORIZE = 3
+MAX_TO_MEMORIZE = 4
 class TextSupplier: 
     def __init__(self, articles_path): 
         all_articles = listdir(articles_path)
@@ -15,6 +15,7 @@ class TextSupplier:
         
     def getCharacterFrequencies(self, text): 
         # Returns the character frequencies in a sorted tuple list [(freq, char), ...]
+        # Smallest frequency is at the front of the list
         char_freq = dict()
         for char in text: 
             if char.isalnum() :
@@ -47,12 +48,12 @@ class TextSupplier:
             char_freq = self.getCharacterFrequencies(self.text)
             num_top = min(MAX_TO_MEMORIZE, len(char_freq))
             
-            random_from_each_section = [random.choice(self.getIthSection(char_freq, i, num_top))[1] for i in range(num_top - 1)]
+            random_from_each_section = [random.choice(self.getIthSection(char_freq, i, num_top))[1] for i in range(1, num_top - 1)]
             self.targets = set(random_from_each_section)
             
 
     def getAnotherArticle(self): 
-        
+        # Gets the next article and updates the data structures to ensure that we keep track of what article has been seen
         if(not self.files_not_read):
             return False
         if not self.files_read: 
@@ -89,9 +90,5 @@ class TextSupplier:
     
     def getArticlePath(self):
         return self.current_article
-        # if cleaned_word in self.targets:
-        #     return True
-        # else: 
-        #     return False
 
 

@@ -9,6 +9,8 @@ class StreamType(Enum):
     AUX = 'aux'
     EYE = 'eye'
     EYENORM = 'eyenorm'
+    LOOKING_UP = 'looking_up'
+    LOOKING_RIGHT = 'looking_right'
     DATA = 'data'
     TIME = 'time'
     FS = 'fs'
@@ -27,7 +29,8 @@ class StreamType(Enum):
 
 # For mapping to EEG data
 channels = {'VEOG':0, 'HEOG':1, 'right_eeg': 6, 'left_eeg': 7}
-alpha_range = (8, 12)
+alpha = (8, 12)
+theta = (4, 7)
 f_range = (0.1, 50)
 f_hi = 2
 

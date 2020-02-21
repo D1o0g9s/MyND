@@ -5,12 +5,13 @@ RUN_TYPE_START = 1
 RUN_TYPE_SHORT = 2
 RUN_TYPE_LONG = 3
 
-run_type = RUN_TYPE_DEBUG
+run_type = RUN_TYPE_START
 
 # Number of articles to read. 
 NUM_TO_READ = 2 if run_type < 2 else 5
 # Number of articles to show without meme distrctions
 NUM_ARTICLES_WITHOUT_MEMES = 0 if run_type < 2 else 3
+TO_MEME_OR_NOT_TO_MEME = [0, 1] if run_type < 2 else [0, 1, 0, 1, 0, 1]
 SHOW_INTRO = True if run_type == RUN_TYPE_START else False
 
 # Articles paths
@@ -41,9 +42,9 @@ introductionText = "MyND: MyNeuroDetector"
 calibrationText = "Calibration stage \n\nFollow the instructions that pop up, while keeping head as still as possible." 
 lookHereText = "Look Here\ncount to 1\nthen Press Space"
 blinkText = "Blink twice\n\nthen Press Space"
-closeEyeText = "Close your eyes and count to 5\n\nthen Press Space"
-openEyeText = "Try not to blink, look at the center of your screen, and count to 5\n\nthen Press Space"
-relaxText = "Relax for at least 5 seconds\n\nthen Press Space"
+closeEyeText = "Close your eyes for 5 secs\n\nthen Press Space"
+openEyeText = "Stare there --> <-- for 5 secs\nthen Press Space"
+relaxText = "Relax for at least 5 secs\n\nthen Press Space"
 
 
 instructionsText1 = "Task:\n\n"+\
@@ -53,15 +54,15 @@ instructionsText1 = "Task:\n\n"+\
 
 
 instructionsText2 = "Controls:\n"+\
-    "> Press 'space' to identify a word\n> Press 'm' to display the target letters again \n\n"+\
+    "> Press 'space' to identify a word as having at least one target letter\n> Press 'm' to display the target letters again \n\n"+\
     "Points:\n"+\
-    "+1 if identified correctly: \n > Pressed 'space' when a word with target letter is shown.\n\n-1 if identified incorrectly or 'm' is pressed:\n > Missed a word with target letter\n > Pressed 'space' when there are no target letters in word\n > 'm' is pressed."
+    "+1 if identified correctly: \n > Pressed 'space' when a word with target letter is shown.\n\n-1 if identified incorrectly:\n > Missed a word with target letter\n > Pressed 'space' when there are no target letters in word"
 
 
 instructionsText3 = "Extra Tips: \n\n"+\
     "> There may be some distractors that appear, you may do whatever you want with them as long as you complete your task.\n\n"+\
     "> There will be a leaderboard shown at the end!\n\n"+\
-    "Ready to begin? A list of letters for you to memorize will appear next."
+    "Ready? A list of letters for you to memorize will appear next."
 
 
 # PsychoPy Positioning
@@ -88,7 +89,7 @@ TOP_Y_COORD = -0.45
 BOTTOM_Y_COORD = 0.45
 
 # Markers
-SINGLETON_SECTIONS = {"psychopy", "calibration", "instruction"}
+SINGLETON_SECTIONS = {"psychopy", "calibration", "instruction", "blink", "openEye", "closeEye", "relax"}
 ARTICLE_SECTIONS = {"memorization", "response"}
 SINGLE_LABELS = {"lettersShown", "newWord", "endWord", "blank", "newMeme", "memeShown", "memeHidden", "newArticle", "spacePressed", "spaceNotPressed", "targetWord", "notTargetWord"}
 RESPONSE_LABELS = {"correct", "incorrect"}
