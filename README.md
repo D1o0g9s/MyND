@@ -24,16 +24,19 @@ EEG, EyeTracker, and PsychoPy Marker streams --> XDF
 3) OpenBCI Cyton Board V3 https://github.com/OpenBCI/pyOpenBCI 
 
 ## Project Versions
+- V2.0.1 : Added marker bounds for calibration period.
+- V2.0.0 : Reorganized data analysis pipeline. Updated calibration period strings. 
 - V1.0.0 : Updated distractor, added memorization aid, and implemented 3 experiment sections. Implemented proper marker information.
 - V0.1.2 : Includes Psychopy, Calibration, OpenBCI, and EyeTracker
 - V0.1.1 : Includes Psychopy, OpenBCI, and EyeTracker
 - V0.1.0 : Includes Psychopy and OpenBCI
-- V0.0.1 : NeuroSky, NeuroSky data analysis
+- V0.0.1 : NeuroSky data collection, data analysis
 
 ## Data Analysis
-- 00 notebook: Data Check
-- 01 notebook: Marker epoching
-- 02 notebook: Data filtering, cleaning, and analysis
+- 00 notebook: Data Check and Filtering -> filtered_cleaned_data
+- 01 notebook: Create Data Frame -> df
+- 02 notebooks: ERPs, Power Bins, PSD Analysis, FOOOF Analysis, Power By Time
+- 03 notebooks: Focus Modeling
 
 ## References
 
@@ -46,6 +49,11 @@ https://webgazer.cs.brown.edu/
 neural digital signal processing. Journal of Open Source Software, 4(36), 1272.
 https://doi.org/10.21105/joss.01272
 
+### Fitting Oscillations & One Over F (FOOOF) 
+- Haller M, Donoghue T, Peterson E, Varma P, Sebastian P, Gao R, Noto T, Knight RT, Shestyuk A,
+Voytek B (2018) Parameterizing Neural Power Spectra. bioRxiv, 299859.
+doi: https://doi.org/10.1101/299859
+
 ### de Sa Lab: Ollie's Seg Speller Offline Processing
 - https://github.com/ollie-d/SegSpeller/blob/master/Offline%20Processing.ipynb 
 
@@ -57,6 +65,7 @@ https://doi.org/10.21105/joss.01272
 - https://iopscience.iop.org/article/10.1088/1741-2552/ab355c/meta
 - https://link.springer.com/article/10.1186/s13634-015-0251-9 
 - https://en.wikipedia.org/wiki/Digital_signal_processing 
+- https://en.wikipedia.org/wiki/Electroencephalography
 - https://neurofantastic.com/ 
 
 ### Meme Sources 
