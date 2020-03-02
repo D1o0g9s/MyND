@@ -25,8 +25,8 @@ EEG, EyeTracker, and PsychoPy Marker streams --> XDF
 
 ## Project Versions
 - V2.0.1 : Added marker bounds for calibration period.
-- V2.0.0 : Reorganized data analysis pipeline. Updated calibration period strings. 
-- V1.0.0 : Updated distractor, added memorization aid, and implemented 3 experiment sections. Implemented proper marker information.
+- V2.0.0 : Reorganized data analysis pipeline. Updated calibration period strings and meme frequency.
+- V1.0.0 : Updated distractor, added memorization aid, and implemented 3 experiment sections. Usable Markers implemented. 
 - V0.1.2 : Includes Psychopy, Calibration, OpenBCI, and EyeTracker
 - V0.1.1 : Includes Psychopy, OpenBCI, and EyeTracker
 - V0.1.0 : Includes Psychopy and OpenBCI
