@@ -219,7 +219,7 @@ def getWindows(eeg_data, eeg_fs=250, shift_length=50, window_length=1.0) :
         cursor += shift_length
     return windows
 
-def getWindowsList(df, **kwargs) : 
+def getWindowsList(df, data_type="data", **kwargs) : 
     windows = list() 
 
     if (type(df) == list) :
@@ -240,13 +240,13 @@ def getWindowsList(df, **kwargs) :
         # print("getWindowsList on Dataframe! ")
         # Get each data and each right and left eeg to window
         for i, row in df.iterrows():
-            data = row["data"]
+            data = row[data_type]
             windows.extend(getWindows(data[StreamType.EEG.value][StreamType.DATA.value][:, channels['right_eeg']], **kwargs))
             windows.extend(getWindows(data[StreamType.EEG.value][StreamType.DATA.value][:, channels['left_eeg']], **kwargs))
     return np.array(windows)
 
-sets = {'verbose':False}
-def getFOOOFFits(eeg_list, eeg_fs=250, freq_range=(2, 20)):
+sets = {'peak_width_limits': [2, 8], 'min_peak_amplitude': 0.2, 'verbose':False}
+def getFOOOFFits(eeg_list, eeg_fs=250, freq_range=(2, 20), sets=sets):
     fits = list()
     for eeg in eeg_list:
         freqs, psd = spectral.compute_spectrum(eeg, eeg_fs, method='welch', avg_type='median', nperseg=eeg_fs)

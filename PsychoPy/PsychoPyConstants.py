@@ -5,7 +5,7 @@ RUN_TYPE_START = 1
 RUN_TYPE_SHORT = 2
 RUN_TYPE_LONG = 3
 
-run_type = RUN_TYPE_START
+run_type = RUN_TYPE_LONG
 
 # Number of articles to read. 
 NUM_TO_READ = 2 if run_type < 2 else 5

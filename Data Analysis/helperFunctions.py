@@ -93,10 +93,10 @@ def epochByMarkIndex(mrk_from_index, mrk_to_index, data):
 # Returns the filtered EEG data by IIR Butterworth order = 2 
 def filterEEG(eeg_data, fs, f_range=f_range):
     sig_filt = filt.filter_signal(eeg_data, fs, 'bandpass', f_range, filter_type='iir', butterworth_order=2)
-    test_sig_filt = filt.filter_signal(sig_filt, fs, 'bandstop', (58, 62), n_seconds=0.25)
+    test_sig_filt = filt.filter_signal(sig_filt, fs, 'bandstop', (58, 62), n_seconds=1)
     num_nans = sum(np.isnan(test_sig_filt))
     sig_filt = np.concatenate(([0]*(num_nans // 2), sig_filt, [0]*(num_nans // 2)))
-    sig_filt = filt.filter_signal(sig_filt, fs, 'bandstop', (58, 62), n_seconds=0.25)
+    sig_filt = filt.filter_signal(sig_filt, fs, 'bandstop', (58, 62), n_seconds=1)
     sig_filt = sig_filt[~np.isnan(sig_filt)]
     return sig_filt
 
@@ -354,10 +354,19 @@ def getTrials(data):
     data_list, a, t_data = getLabelBoundSingleLabelData("newWord", "endWord", data, go_backward=False)
     return data_list
 
+def getTrialLength(data):
+    markers = data[StreamType.MARKER.value][StreamType.DATA.value]
+    times = data[StreamType.MARKER.value][StreamType.TIME.value]
+    if (PSYCHO_PY_MARKERS["newWord"] in markers) : 
+        index_start = np.where(data[StreamType.MARKER.value][StreamType.DATA.value] == PSYCHO_PY_MARKERS["newWord"])[0]
+        return float(markers[index_start + 3][0])
+    else: 
+        return 0
+
 def getReactionTime(data) :
     markers = data[StreamType.MARKER.value][StreamType.DATA.value]
     times = data[StreamType.MARKER.value][StreamType.TIME.value]
-    if (PSYCHO_PY_MARKERS["spacePressed"] in markers) and (PSYCHO_PY_MARKERS["spacePressed"] in markers): 
+    if (PSYCHO_PY_MARKERS["spacePressed"] in markers) and (PSYCHO_PY_MARKERS["newWord"] in markers): 
         
         index_space = np.where(data[StreamType.MARKER.value][StreamType.DATA.value] == PSYCHO_PY_MARKERS["spacePressed"])[0]
         index_start = np.where(data[StreamType.MARKER.value][StreamType.DATA.value] == PSYCHO_PY_MARKERS["newWord"])[0]
@@ -366,10 +375,22 @@ def getReactionTime(data) :
     else:
         return 0
 
-def getEEGFromDataFrame_AvgLeftRight(df):
+def getWordLength(data) :
+    markers = data[StreamType.MARKER.value][StreamType.DATA.value]
+    times = data[StreamType.MARKER.value][StreamType.TIME.value]
+    if (PSYCHO_PY_MARKERS["newWord"] in markers): 
+        
+        index_start = np.where(data[StreamType.MARKER.value][StreamType.DATA.value] == PSYCHO_PY_MARKERS["newWord"])[0]
+        
+        return len(markers[index_start + 2][0][0])
+    else:
+        return 0
+
+
+def getEEGFromDataFrame_AvgLeftRight(df, data_type="data"):
     eeg_list = list()
     for i, row in df.iterrows():
-        data = row["data"]
+        data = row[data_type]
         left_eeg = data[StreamType.EEG.value][StreamType.DATA.value][:,channels['left_eeg']]
         right_eeg = data[StreamType.EEG.value][StreamType.DATA.value][:,channels['right_eeg']]
         avg_eeg = np.mean([left_eeg, right_eeg], axis=0)

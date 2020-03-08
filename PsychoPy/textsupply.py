@@ -61,7 +61,7 @@ class TextSupplier:
         else: 
             filename = random.choice(list(self.files_not_read))
 
-        print("another article:", filename)
+        print(filename)
         self.files_not_read.remove(filename)
         self.files_read.add(filename)
         self.current_article = filename
