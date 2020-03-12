@@ -8,9 +8,9 @@ OpenBCI Cyton:
 
 | Pin  | Location | Function  |
 |:-----|:---------|:----------|
-| Bias | Fpz | Ground |
-| N8P | Fp1 | EEG Left Forehead Channel |
-| N7P | Fp2 | EEG Right Forehead Channel |
+| Bias | Fz | Ground |
+| N8P | F3 | EEG Left Forehead Channel |
+| N7P | F4 | EEG Right Forehead Channel |
 | N2P | HEOG (left) | Saccade Detection |
 | N1P | VEOG (left) | Blink Detection |
 | SRB | Earclip (right) | Reference |
