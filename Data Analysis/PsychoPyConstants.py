@@ -65,7 +65,7 @@ TOP_Y_COORD = -0.45
 BOTTOM_Y_COORD = 0.45
 
 # Markers
-SINGLETON_SECTIONS = {"psychopy", "calibration", "instruction"}
+SINGLETON_SECTIONS = {"psychopy", "calibration", "instruction", "blink", "openEye", "closeEye", "relax"}
 ARTICLE_SECTIONS = {"memorization", "response"}
 SINGLE_LABELS = {"lettersShown", "newWord", "endWord", "blank", "newMeme", "memeShown", "memeHidden", "newArticle", "spacePressed", "spaceNotPressed", "targetWord", "notTargetWord"}
 RESPONSE_LABELS = {"correct", "incorrect"}

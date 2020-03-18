@@ -18,6 +18,8 @@ class Leaderboard:
             self.leaderboard_path = "./leaderboard_short.pickle"
         if run_type == RUN_TYPE_LONG: 
             self.leaderboard_path = "./leaderboard_long.pickle"
+        if run_type == RUN_TYPE_SUPER_LONG: 
+            self.leaderboard_path = "./leaderboard_super_long.pickle"
         self.__setNumInLeaderboard(num_in_leaderboard)
         
     def __setNumInLeaderboard(self, num_in_leaderboard=DEFAULT_NUM_IN_LEADERBOARD) :

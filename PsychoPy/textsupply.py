@@ -3,7 +3,9 @@ from os import listdir
 from os.path import join
 import random
 
-MAX_TO_MEMORIZE = 4
+MAX_NUM_PARTITIONS = 5
+MIN_TO_MEMORIZE = MAX_NUM_PARTITIONS - (MAX_NUM_PARTITIONS // 2) - 1
+NUM_TO_MEMORIZE = 2 # this will give you 2 letters since range is 1 to [MAX_TO_MEMORIZE - 1]
 class TextSupplier: 
     def __init__(self, articles_path): 
         all_articles = listdir(articles_path)
@@ -29,6 +31,8 @@ class TextSupplier:
         return sorted_tuple_list
         
     def getIthSection(self, a_list, i, num_partitions): 
+        # Extracts the ith section of a given list
+        # [ 0, 1, 2, 3, 4, etc] where each number is the ith section
         num_elements_total = len(a_list)
         elements_per_group = num_elements_total // num_partitions
         section = a_list[elements_per_group * i: elements_per_group * (i+1)]
@@ -46,9 +50,12 @@ class TextSupplier:
 
             # Get the target letters / numbers: 
             char_freq = self.getCharacterFrequencies(self.text)
-            num_top = min(MAX_TO_MEMORIZE, len(char_freq))
+            num_top = min(MAX_NUM_PARTITIONS, len(char_freq))
+            print(char_freq)
+            print(self.getIthSection(char_freq, 2, num_top))
+            print(self.getIthSection(char_freq, 3, num_top))
             
-            random_from_each_section = [random.choice(self.getIthSection(char_freq, i, num_top))[1] for i in range(1, num_top - 1)]
+            random_from_each_section = [random.choice(self.getIthSection(char_freq, i, num_top))[1] for i in range(MIN_TO_MEMORIZE, MIN_TO_MEMORIZE + NUM_TO_MEMORIZE)]
             self.targets = set(random_from_each_section)
             
 

@@ -71,10 +71,14 @@ def epochByTime(start_timestamp, end_timestamp, data):
         time_series = data[stream_type][StreamType.TIME.value]
         data_series = data[stream_type][StreamType.DATA.value]
         
+        
         indexes = np.intersect1d(np.where(time_series >= start_timestamp), np.where(time_series <= end_timestamp)) 
         new_data[stream_type] = {}
         new_data[stream_type][StreamType.TIME.value] = time_series[indexes]
         new_data[stream_type][StreamType.DATA.value] = data_series[indexes]
+        if StreamType.FS.value in data[stream_type].keys():
+            fs = data[stream_type][StreamType.FS.value]
+            new_data[stream_type][StreamType.FS.value] = fs
     
     return new_data
 

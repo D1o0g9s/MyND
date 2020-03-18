@@ -47,7 +47,7 @@ two_memes = False
 memes_path = "./pics/memes"
 
 all_memes = os.listdir(memes_path)
-meme_filenames = [os.path.join(memes_path, all_memes[i]) for i in range(len(all_memes))]
+meme_filenames = [os.path.join(memes_path, all_memes[i]) for i in range(len(all_memes)) if not all_memes[i].startswith(".")]
 rd.shuffle(meme_filenames)
 
 meme_filenames2 = list(meme_filenames)

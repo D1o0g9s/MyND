@@ -4,25 +4,29 @@ RUN_TYPE_DEBUG = 0
 RUN_TYPE_START = 1
 RUN_TYPE_SHORT = 2
 RUN_TYPE_LONG = 3
+RUN_TYPE_SUPER_LONG = 4
 
-run_type = RUN_TYPE_LONG
+run_type = RUN_TYPE_SUPER_LONG
 
 # Number of articles to read. 
-NUM_TO_READ = 2 if run_type < 2 else 5
+NUM_TO_READ = 2 if (run_type < 2 or run_type == RUN_TYPE_SUPER_LONG) else 5
 # Number of articles to show without meme distrctions
 NUM_ARTICLES_WITHOUT_MEMES = 0 if run_type < 2 else 3
-TO_MEME_OR_NOT_TO_MEME = [0, 1] if run_type < 2 else [0, 1, 0, 1, 0, 1]
+TO_MEME_OR_NOT_TO_MEME = [0, 0] if (run_type < 2 or run_type == RUN_TYPE_SUPER_LONG) else [0, 1, 0, 1, 0, 1]
 SHOW_INTRO = True if run_type == RUN_TYPE_START else False
 
 # Articles paths
 START_ARTICLES_PATH = "./articles start"
 SHORT_ARTICLES_PATH = "./articles short"
 LONG_ARTICLES_PATH = "./articles long"
+SUPER_LONG_ARTICLES_PATH = "./articles super_long"
 
 if run_type == RUN_TYPE_SHORT: 
     articles_path = SHORT_ARTICLES_PATH
 elif run_type == RUN_TYPE_LONG: 
     articles_path = LONG_ARTICLES_PATH
+elif run_type == RUN_TYPE_SUPER_LONG: 
+    articles_path = SUPER_LONG_ARTICLES_PATH
 else :
     articles_path = START_ARTICLES_PATH
 
@@ -71,10 +75,10 @@ image_pos = (0.3, 0)
 image_pos_2 = (-0.75, 0)
 word_pos = (-0.4, 0)
 points_pos = (0, 0.3)
-PERCENT_SHOW = 0.8 # Percentage of time the text should be shown in TimedTextWithSpaceExit
+PERCENT_SHOW = 0.5#0.8 # Percentage of time the text should be shown in TimedTextWithSpaceExit
 
-RAND_SECS_LOWERBOUND = 0.9 # min Number of seconds to display the word for
-RAND_SECS_STARTBOUND = 1.2 # starting number of seconds to display word for
+RAND_SECS_LOWERBOUND = 0.7#0.9 # min Number of seconds to display the word for
+RAND_SECS_STARTBOUND = 1.0#1.2 # starting number of seconds to display word for
 
 SCALE_FACTOR_EEG = (4500000)/24/(2**23-1) #uV/count
 SCALE_FACTOR_AUX = 0.002 / (2**4)
