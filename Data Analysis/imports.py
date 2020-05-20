@@ -12,6 +12,8 @@ from neurodsp.timefrequency import amp_by_time, freq_by_time, phase_by_time
 #Scipy and SKLearn
 import scipy.signal as signal # For filtering
 from sklearn.decomposition import FastICA # For removing blink component
+from sklearn.preprocessing import MinMaxScaler
+
 
 # For saving and loading pickle files
 import os 

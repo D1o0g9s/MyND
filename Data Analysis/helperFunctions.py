@@ -64,6 +64,22 @@ def loadPickle(path):
         data = pickle.load(f)
     return data
 
+def loadData(datatype='filtered_cleaned_data', foldername=None, filename=None):
+    # Get the most currently updated foldername and filename if they don't already exist. 
+    if foldername is None or filename is None:
+        filename_foldername_dict_path = os.path.join("..", "data", "most_currently_updated.pickle")
+        filename_foldername_dict = loadPickle(filename_foldername_dict_path)
+        
+        if foldername is None :
+            foldername=filename_foldername_dict["foldername"]
+        if filename is None :
+            filename=filename_foldername_dict["filename"]
+    
+    data_directory = os.path.join('..' ,'data',datatype, foldername)
+    data_path = os.path.join(data_directory, filename + ".pickle")
+    data = loadPickle(data_path)
+    return data
+
 # Returns a new data structure that starts at start_timestamp and ends at end_timestamp (inclusive)
 def epochByTime(start_timestamp, end_timestamp, data): 
     new_data = {}
@@ -422,7 +438,7 @@ def tidyEEGList(eeg_list, verbose=False):
     minimum_length = min(map(len, cleaned_eeg_list))
     if verbose: 
         print("min length:", minimum_length)
-    new_list = [cleaned_eeg_list[i][:minimum_length] for i in range(len(cleaned_eeg_list))]
+    new_list = np.array([cleaned_eeg_list[i][:minimum_length] for i in range(len(cleaned_eeg_list))])
     return new_list
 
 def getAmpByTimeLeftRight(data_frame, eeg_fs, band, data_type="data", cutoff_timepoints=250) :
@@ -506,3 +522,21 @@ def compareDFs(dfs, names, band=alpha, eeg_fs=250, data_type="data", cutoff_time
     plt.xlabel("timepoints from start of word")
     plt.legend()
     plt.show()
+
+def checkDictionarySameLengths(dictionary) :
+    # Checks if all the value lists in the dictionary are the same length
+    prev_len = 0
+    changed = False
+    for col in dictionary: 
+        if len(dictionary[col]) != prev_len and prev_len != 0: 
+            return False
+        prev_len = len(dictionary[col])
+    return True
+
+def scaleData(df, cols):
+    # scale data to be between 0-1 including average
+    # Return the scaled data
+    sc = MinMaxScaler(feature_range = (0, 1))
+    df_temp = df[cols]
+    data_set_scaled = sc.fit_transform(df_temp)
+    return data_set_scaled, sc

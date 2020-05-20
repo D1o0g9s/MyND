@@ -82,6 +82,7 @@ def filterStreamStructEEG(original_data, eeg_fs=250):
     for channel in channels :
         eeg_data = original_data[StreamType.EEG.value][StreamType.DATA.value][:,channels[channel]]
         sig_filt = filterEEG(eeg_data, eeg_fs)
+        # sig_filt = sig_filt - np.mean(sig_filt)
         filtered_data[StreamType.EEG.value][StreamType.DATA.value][:,channels[channel]] = sig_filt
 
     return filtered_data

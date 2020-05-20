@@ -3,7 +3,7 @@ from pylsl import StreamInfo, StreamOutlet
 from pyOpenBCI import OpenBCICyton
 import numpy as np
 from PsychoPyConstants import SCALE_FACTOR_EEG, SCALE_FACTOR_AUX
-
+import sys
 
 class EEGRecorder :
 
@@ -42,14 +42,15 @@ class EEGRecorder :
 
     def runSession(self): 
         self.__createEEGStream()
-        self.__board = OpenBCICyton()
-        self.__board.start_stream(self.__lsl_streamers)
-
         # eeg_thread = threading.Thread(target=self.__board.start_stream, args=(self.__lsl_streamers,))
         # eeg_thread.start()
-
-        self.__board.stop_stream()
-        sys.exit()
+        try:
+            self.__board = OpenBCICyton()
+            self.__board.start_stream(self.__lsl_streamers)
+        except (KeyboardInterrupt, SystemExit):
+            self.__board.stop_stream()
+            sys.exit()
+        
 
 er = EEGRecorder()
 er.runSession()
