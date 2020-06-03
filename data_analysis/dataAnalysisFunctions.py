@@ -12,7 +12,7 @@ def findLargestStdev(component, eeg_fs=250, verbose=True):
     # Finds the ICA component that has the largest standard dev if filtered to 1 to 5 Hz 
     max_i = 0
     max_val = 0
-    for i in range(4): 
+    for i in range(component.shape[1]): 
         filtered_sig = filterEEG(component[:,i], eeg_fs, (1, 5))
         std_val = np.std(filtered_sig)
         if (verbose) :
@@ -28,9 +28,15 @@ def findLargestStdev(component, eeg_fs=250, verbose=True):
     return max_i
 
 
-def getCleanedSignal(original_data, verbose=True):
-    active_eeg = original_data[StreamType.EEG.value][StreamType.DATA.value][:,list(channels.values())]
-    eeg_time = original_data[StreamType.EEG.value][StreamType.TIME.value]
+def getCleanedSignal_EEGList(eeg_list, fs=250, verbose=True): 
+    """
+        eeg_list is an array of eeg channels with shape (timepoints, channels)
+    """
+    num_timepoints, num_channels = eeg_list.shape
+    seconds_array = np.array([i for i in range(num_timepoints)]) / fs 
+    
+    active_eeg = eeg_list
+    eeg_time = seconds_array
 
     if(verbose) : 
         line_objects = plt.plot(eeg_time, active_eeg)
@@ -38,7 +44,7 @@ def getCleanedSignal(original_data, verbose=True):
         plt.title("EEG of 2 Eye Blinks")
         plt.show()
 
-    ica = FastICA(n_components=4)
+    ica = FastICA(n_components=num_channels)
     standardized=active_eeg
     standardized /= active_eeg.std(axis=0)
     
@@ -61,19 +67,28 @@ def getCleanedSignal(original_data, verbose=True):
     
     #reconstruct signal
     X_restored = ica.inverse_transform(cleaned_components)
-    
-    filtered_cleaned_data = copy.deepcopy(original_data)
-    i = 0
-    for channel in channels: 
-        filtered_cleaned_data[StreamType.EEG.value][StreamType.DATA.value][:,channels[channel]] = X_restored[:,i]
-        i += 1
-        
+
+    # Display corrected signal
     if(verbose):
         line_objects = plt.plot(eeg_time, X_restored)
         plt.legend(iter(line_objects), list(channels.keys()))
         plt.title("EEG without blinks")
         plt.show()
-    
+
+    return X_restored
+
+
+def getCleanedSignal(original_data, fs=250, verbose=True):
+    active_eeg = original_data[StreamType.EEG.value][StreamType.DATA.value][:,list(channels.values())]
+    #eeg_time = original_data[StreamType.EEG.value][StreamType.TIME.value]
+
+    X_restored = getCleanedSignal_EEGList(active_eeg, fs=fs, verbose=verbose)
+
+    filtered_cleaned_data = copy.deepcopy(original_data)
+
+    for i, channel in enumerate(channels): 
+        filtered_cleaned_data[StreamType.EEG.value][StreamType.DATA.value][:,channels[channel]] = X_restored[:,i]
+        
     return filtered_cleaned_data
 
 def filterStreamStructEEG(original_data, eeg_fs=250):

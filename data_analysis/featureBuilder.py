@@ -49,9 +49,10 @@ class featureBuilder:
                 cols.append(eeg_type + " " + s)
         cols.append("focused")
         return cols
-    
-    def appendDataToDict(self, data_object, focused, dictionary={}):
+
+    def appendEEGDataToDict(self, eeg_data, eeg_fs, focused, dictionary={}):
         """
+            params eeg_data is 2 channels of data [[left_eeg][right_eeg]]
             This will return a dictionary with the data_object's features appended so that the dictionary can 
             be transformed into a pandas dataframe. CAUTION, the returned dictionary will not contain any 
             keys that are not in the below cols list. 
@@ -64,6 +65,10 @@ class featureBuilder:
             Params: 
             Output: returns dictionary with the features of the data_object appended
         """
+        if len(eeg_data) != 2: 
+            print("eeg data needs to be in the format [[left_eeg] [right_eeg]]: 2 channels of data")
+            raise
+
         # Initialize the columns we need, including the focus (0 or 1) column
         cols = self.getCols()
 
@@ -72,12 +77,10 @@ class featureBuilder:
         if not checkDictionarySameLengths(cleanedDictionary):
             print("dictionary has misaligned inputs! Not going to add the new object")
             raise
-
-        eeg_fs = getEEGfs(data_object)
-
+        
         # Populate left and right eeg power info first
-        for eeg_type in self.eeg_types[:2]: 
-            eeg = data_object[StreamType.EEG.value][StreamType.DATA.value][:, channels[eeg_type+'_eeg']]
+        for i, eeg in enumerate(eeg_data): 
+            eeg_type = self.eeg_types[i] 
             power_ratios = getPowerRatio(eeg, self.binning, eeg_fs=eeg_fs)
             for idx, interval_name in enumerate(self.interval_names): 
                 cleanedDictionary[interval_name + " " + eeg_type].append(power_ratios[idx])
@@ -92,12 +95,10 @@ class featureBuilder:
             cleanedDictionary[eeg_type + " " + self.stat_types[4]].append(np.mean([eeg[i] - eeg[i-2] for i in range(2, len(eeg))]))
             cleanedDictionary[eeg_type + " " + self.stat_types[5]].append(np.mean([eeg[i] - eeg[i-2] for i in range(2, len(eeg))]) / np.std(eeg))
 
-
-
         # Power of average
         for eeg_type in [self.eeg_types[2]]: 
-            left_eeg = data_object[StreamType.EEG.value][StreamType.DATA.value][:, channels['left_eeg']]
-            right_eeg = data_object[StreamType.EEG.value][StreamType.DATA.value][:, channels['right_eeg']]
+            left_eeg = eeg_data[0]
+            right_eeg = eeg_data[1]
             eeg = np.mean([left_eeg, right_eeg], axis=0)
             power_ratios = getPowerRatio(eeg, self.binning, eeg_fs=eeg_fs)
             for idx, interval_name in enumerate(self.interval_names): 
@@ -113,11 +114,10 @@ class featureBuilder:
             cleanedDictionary[eeg_type + " " + self.stat_types[4]].append(np.mean([eeg[i] - eeg[i-2] for i in range(2, len(eeg))]))
             cleanedDictionary[eeg_type + " " + self.stat_types[5]].append(np.mean([eeg[i] - eeg[i-2] for i in range(2, len(eeg))]) / np.std(eeg))
 
-
         # Power of difference
         for eeg_type in [self.eeg_types[3]]: 
-            left_eeg = data_object[StreamType.EEG.value][StreamType.DATA.value][:, channels['left_eeg']]
-            right_eeg = data_object[StreamType.EEG.value][StreamType.DATA.value][:, channels['right_eeg']]
+            left_eeg = eeg_data[0]
+            right_eeg = eeg_data[1]
             eeg = left_eeg - right_eeg
             power_ratios = getPowerRatio(eeg, self.binning, eeg_fs=eeg_fs)
             for idx, interval_name in enumerate(self.interval_names): 
@@ -132,8 +132,7 @@ class featureBuilder:
             # Second differences 
             cleanedDictionary[eeg_type + " " + self.stat_types[4]].append(np.mean([eeg[i] - eeg[i-2] for i in range(2, len(eeg))]))
             cleanedDictionary[eeg_type + " " + self.stat_types[5]].append(np.mean([eeg[i] - eeg[i-2] for i in range(2, len(eeg))]) / np.std(eeg))
-
-
+        
         # Average of left and right power 
         for power_comparison in [self.power_comparisons[0]]: 
             for idx, interval_name in enumerate(self.interval_names): 
@@ -148,7 +147,6 @@ class featureBuilder:
                 left_val = cleanedDictionary[interval_name + " " + self.eeg_types[0]][-1]
                 right_val = cleanedDictionary[interval_name + " " + self.eeg_types[1]][-1]
                 cleanedDictionary[interval_name + " " + power_comparison].append(left_val - right_val)
-
 
         # Ratios
         for eeg_type in self.eeg_types: 
@@ -166,3 +164,27 @@ class featureBuilder:
             #raise
 
         return cleanedDictionary
+    
+    def appendDataToDict(self, data_object, focused, dictionary={}):
+        """
+            This will return a dictionary with the data_object's features appended so that the dictionary can 
+            be transformed into a pandas dataframe. CAUTION, the returned dictionary will not contain any 
+            keys that are not in the below cols list. 
+            Features:
+            1. Delta, Theta, Alpha, Beta for left, right, average, and left-right
+            2. Average and Left power - right power for Delta, Theta, Alpha, Beta
+            3. Delta/Beta, Theta/Beta ratios for left, right, and average
+            4. Average, Standard deviation, mean of first diff, normalized mean of first diff, 
+                mean of second diff, normalized mean of second diff for left, right, and average 
+            Params: 
+            Output: returns dictionary with the features of the data_object appended
+        """
+
+        eeg_fs = getEEGfs(data_object)
+        left_eeg = data_object[StreamType.EEG.value][StreamType.DATA.value][:, channels['left_eeg']]
+        right_eeg = data_object[StreamType.EEG.value][StreamType.DATA.value][:, channels['right_eeg']]
+        list_eeg = []
+        list_eeg.append(left_eeg)
+        list_eeg.append(right_eeg)
+        return self.appendEEGDataToDict(list_eeg, eeg_fs, focused, dictionary)
+
