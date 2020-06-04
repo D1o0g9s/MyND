@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
-from helperFunctions import getEEGfs, checkDictionarySameLengths
-from dataAnalysisFunctions import getIntervals, getPowerRatio 
-from constants import StreamType, channels
+from .helperFunctions import getEEGfs, checkDictionarySameLengths
+from .dataAnalysisFunctions import getIntervals, getPowerRatio 
+from .constants import StreamType, channels
 
 class featureBuilder: 
     default_binning=[0.5, 4, 7, 12, 30]

@@ -4,8 +4,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from constants import * 
-from helperFunctions import * 
+from .constants import * 
+from .helperFunctions import * 
 
 ## FILTERING ## 
 def findLargestStdev(component, eeg_fs=250, verbose=True):

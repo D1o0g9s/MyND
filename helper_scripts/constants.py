@@ -1,5 +1,5 @@
-from imports import *
-from PsychoPyConstants import * 
+from .imports import *
+from .PsychoPyConstants import * 
 
 
 # Data stream types

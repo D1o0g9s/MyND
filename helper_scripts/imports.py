@@ -1,6 +1,8 @@
 from enum import Enum
 import numpy as np
 import pyxdf
+import matplotlib
+matplotlib.use("Qt4Agg") # TODO: check if this works. had to change to use this bc not compatible with tkinter
 import matplotlib.pyplot as plt
 import scipy as sp
 

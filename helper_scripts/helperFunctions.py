@@ -1,6 +1,6 @@
-from imports import *
-from constants import * 
-from PsychoPyConstants import *
+from .imports import *
+from .constants import * 
+from .PsychoPyConstants import *
 
 # Load in xdf info a useable format
 def loadxdf(fname, synthetic = False):
