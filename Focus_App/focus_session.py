@@ -15,6 +15,7 @@ os.chdir("./Focus_App/")
 from work_session import WorkSession
 
 import json
+import time
 
 import matplotlib
 matplotlib.use("Qt4Agg")
@@ -22,6 +23,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from matplotlib.figure import Figure
 import matplotlib.animation as animation
 from matplotlib import style
+import numpy as np
  
 import tkinter as tk
 from tkinter import ttk
@@ -34,7 +36,7 @@ style.use("ggplot")
 class FocusSession: 
     def __init__(self, data_filename) :
         self.in_session = False 
-        self.work_session = None 
+        self.work_session = WorkSession() 
         self.data_filename = data_filename 
 
         # Ensure file is created
@@ -132,12 +134,18 @@ class SessionViewer(tk.Frame):
         self.button_back.pack()
 
         self.fig = Figure(figsize=(5,5), dpi=100)
-        self.a = self.fig.add_subplot(2, 1, 1)
-        self.b = self.fig.add_subplot(2, 1, 2)
+        self.average_focus_plot = self.fig.add_subplot(2, 1, 1)
+        self.average_focus_plot.set_ylim(-2, 2)
+        self.average_focus_plot.set_xlim(0, self.session.work_session.buffer_seconds)
+        self.x_values = np.linspace(0, self.session.work_session.buffer_seconds, self.session.work_session.fs * self.session.work_session.buffer_seconds)
+
+        self.eeg_plot = self.fig.add_subplot(2, 1, 2)
+        self.eeg_plot.set_ylim(-400, 400)
+        self.eeg_plot.set_xlim(0, self.session.work_session.buffer_seconds)
         self.canvas = FigureCanvasTkAgg(self.fig, self)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
-        self.ani = animation.FuncAnimation(self.fig, self.animate, interval=200)
+        self.ani = animation.FuncAnimation(self.fig, self.animate, interval=100)
 
         # canvas2 = FigureCanvasTkAgg(f2, self)
         # canvas2.draw()
@@ -147,43 +155,46 @@ class SessionViewer(tk.Frame):
         # canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
     def show(self):
-        print("config")
         if self.session.in_session:
             self.button_session.config(text=self.session.session_end_text)
         else : 
             self.button_session.config(text=self.session.session_start_text)
             
     def toggleSession(self):
-        print("toggling")
         self.session.in_session = not self.session.in_session
 
         if self.session.in_session: 
             # start recording 
-            self.session.work_session = WorkSession()
             self.session.work_session.start()
+           
         else : 
             # end recording 
             self.session.work_session.end()
+            # self.ani.event_source.stop()
             # write data 
-            self.session.writePastSession(self.session.work_session.timestamp, self.session.work_session.total_avg)
-            # destroy
-            self.session.work_session = None
+            self.session.writePastSession(self.session.work_session.getTimestamp(), self.session.work_session.getTotalAvg())
         self.show() 
+    
+    def __plotMultilines(self, ax, xvals, yvals): 
+        if ax.lines: 
+            #ax.clear()
+            for i, line in enumerate(ax.lines):
+                line.set_ydata(yvals[i])
+        else:
+            #ax.clear()
+            for i, ys in enumerate(yvals): 
+                ax.plot(xvals, ys)
+        
+    def animate(self, i):        
+        if self.session.work_session.started: 
+            xList = self.x_values
+            yList = np.transpose(self.session.work_session.getEEGBufferData())
+            
+            self.__plotMultilines(self.eeg_plot, xList, yList)
 
-    def animate(self, i):
-        print(i)
-        xList = list(range(10))
-        yList = list(xList)
-        random.shuffle(yList)
-
-        self.a.clear()
-        self.a.plot(xList, yList)
-
-        xList = list(range(10))
-        yList = list(xList)
-        random.shuffle(yList)
-        self.b.clear()
-        self.b.plot(xList, yList)
+            xList = self.x_values
+            yList = np.array([self.session.work_session.getAveragedFocusBufferData()])
+            self.__plotMultilines(self.average_focus_plot, xList, yList)
 
 class PastViewer(tk.Frame):
 
@@ -197,8 +208,6 @@ class PastViewer(tk.Frame):
         button1.pack()
     def show(self):
         print("past page")
-
-
 
 
 session = FocusSession('./data_log.json')
