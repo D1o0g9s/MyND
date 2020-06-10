@@ -27,6 +27,7 @@ DEFAULT_FS = 250
 DEFAULT_CHANNELS = [0, 1, 2, 3, 4, 5, 6, 7]
 DEFAULT_BINNING=[4, 8, 12, 20, 30]
 DEFAULT_UPDATE_SECONDS = 0.5
+LIVE_DATA = True
 
 class WorkSession: 
     def __init__(self):
@@ -41,15 +42,18 @@ class WorkSession:
         self.model = torch.load("../data_analysis/models/model_t_combined_continuous_filtered_3class.pickle")
         self.focus_logger = FocusLogger(fs=self.fs)
         self.eeg_sampler = EEGSampler(fs=self.fs, buffer_seconds=self.buffer_seconds, update_seconds=DEFAULT_UPDATE_SECONDS, channels=DEFAULT_CHANNELS, binning=DEFAULT_BINNING, live=True, model=self.model, to_clean=True, three_class=True, focus_logger=self.focus_logger)
-        
-        # self.board = OpenBCICyton()
-        # self.eeg_thread = threading.Thread(target=self.board.start_stream, args=(self.eeg_sampler.push_data_sample,))
-        # self.eeg_thread.start()
+        if LIVE_DATA: 
+            self.board = OpenBCICyton()
+            self.eeg_thread = threading.Thread(target=self.board.start_stream, args=(self.eeg_sampler.push_data_sample,))
+            self.eeg_thread.start()
         self.started = True
 
     def end(self): 
         print("ended work session")
-        #self.board.stop_stream()
+        self.duration = datetime.utcfromtimestamp((datetime.now() - self.timestamp).total_seconds()).strftime('%H:%M:%S')
+
+        if LIVE_DATA: 
+            self.board.stop_stream()
         self.started = False
     
     def getTotalAvg(self):
@@ -57,6 +61,11 @@ class WorkSession:
 
     def getTimestamp(self):
         return self.timestamp
+    def getDuration(self):
+        if self.started:
+            self.duration = datetime.utcfromtimestamp((datetime.now() - self.timestamp).total_seconds()).strftime('%H:%M:%S')
+        return self.duration
+        
     def getEEGBufferData(self):
         return self.eeg_sampler.getBuffer()
     def getAveragedFocusBufferData(self):
@@ -118,16 +127,18 @@ class EEGSampler:
         self.focus_average[0] = np.mean(self.focus[:self.fs])
 
     def getBuffer(self):
-        self.buffer = np.roll(self.buffer, 1, 0) # To remove 
-        for i in self.channels:
-            self.buffer[0, i] = random.randint(-100, 100)
+        if not LIVE_DATA: 
+            self.buffer = np.roll(self.buffer, 1, 0) # To remove 
+            for i in self.channels:
+                self.buffer[0, i] = random.randint(-100, 100)
         return self.buffer
     def getAveragedFocus(self):  
-        self.focus = np.roll(self.focus, 1, 0) # To remove
-        self.focus[0] = random.randint(-1, 1)
-
-        self.focus_average = np.roll(self.focus_average, 1, 0) # To remove
-        self.focus_average[0] = np.mean(self.focus[:50])
+        if not LIVE_DATA: 
+            self.focus = np.roll(self.focus, 1, 0) # To remove
+            self.focus[0] = random.randint(-1, 1)
+            self.focus_logger.addFocusValue(self.focus[0])
+            self.focus_average = np.roll(self.focus_average, 1, 0) # To remove
+            self.focus_average[0] = np.mean(self.focus[:50])
         return self.focus_average
 
     def push_data_sample(self, sample):
