@@ -38,6 +38,18 @@ EEG, EyeTracker, and PsychoPy Marker streams --> XDF
 - 02 notebooks: ERPs, Power Bins, PSD Analysis, FOOOF Analysis, Power By Time
 - 03 notebooks: Focus Modeling
 
+## Usage
+
+- PsychoPy + OpenBCI Recording
+   - python3 recordEEG.py
+   - python3 PsychoRun.py
+   - Run LabRecorder https://github.com/labstreaminglayer/App-LabRecorder 
+   - Select the EEG and Markers stream to record. Edit the save-as file name or change the filename later as desired. 
+- Eye tracker
+   - python3 eyeTrackerSocket_Server.py
+   - node app.js
+   - go to localhost:3000/index.html
+
 ## References
 
 ### Webgazer 
