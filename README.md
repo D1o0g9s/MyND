@@ -1,6 +1,7 @@
 
 # MyND: My Neuro Detector
-My Neuro Detector (MyND) is a project that attempts to characterize focus and predict distraction states through scalp EEG. 
+My Neuro Detector (MyND) is a project that attempts to characterize focus and predict distraction states through scalp EEG. </br>
+[Project Writeup](https://portfolium.com/entry/detecting-focus-and-flow-from-consumer-based-bcis)
 
 ## EEG Details
 
@@ -18,10 +19,10 @@ OpenBCI Cyton:
 EEG, EyeTracker, and PsychoPy Marker streams --> XDF 
 
 ## Project Tools
-1) PsychoPy https://www.psychopy.org/ 
-2) Webgazer.js https://webgazer.cs.brown.edu/ </br>
+1) [PsychoPy](https://www.psychopy.org/) 
+2) [Webgazer.js](https://webgazer.cs.brown.edu) </br>
    - A decorated version was used to collect data for this project. See webgazerListener.js
-3) OpenBCI Cyton Board V3 https://github.com/OpenBCI/pyOpenBCI 
+3) [OpenBCI Cyton Board V3](https://github.com/OpenBCI/pyOpenBCI) 
 
 ## Project Versions
 - V2.0.1 : Added marker bounds for calibration period.
@@ -43,7 +44,7 @@ EEG, EyeTracker, and PsychoPy Marker streams --> XDF
 - PsychoPy + OpenBCI Recording
    - python3 recordEEG.py
    - python3 PsychoRun.py
-   - Run LabRecorder https://github.com/labstreaminglayer/App-LabRecorder 
+   - Run [LabRecorder](https://github.com/labstreaminglayer/App-LabRecorder)
    - Select the EEG and Markers stream to record. Edit the save-as file name or change the filename later as desired. 
 - Eye tracker
    - python3 eyeTrackerSocket_Server.py
@@ -81,6 +82,6 @@ doi: https://doi.org/10.1101/299859
 - https://neurofantastic.com/ 
 - https://waitbutwhy.com/ 
 
-### Meme Sources 
+### Image Sources 
 - https://cleanmemes.com/ 
 - https://www.reddit.com/r/memes/ 
